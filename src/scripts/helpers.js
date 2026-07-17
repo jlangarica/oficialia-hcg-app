@@ -24,8 +24,4 @@ function escapeHTML(str) {
 // Pre-computed constants (evita recalcular en cada frame/hot-path)
 const SCAN_RING_CIRCUMFERENCE = 2 * Math.PI * 32; // ~201.06
 
-function generateId() {
-  return 'page_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-}
-
-export { $, escapeHTML, SCAN_RING_CIRCUMFERENCE, generateId };
+export { $, escapeHTML, SCAN_RING_CIRCUMFERENCE };
