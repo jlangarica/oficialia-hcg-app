@@ -35,6 +35,7 @@ class ScannerService:
                 "-o", str(self._settings.raw_pdf_path),
                 "-p", self._settings.scanner_profile,
                 "--force",
+                "--hide-progress",  # ◄ NUEVO: Fuerza a NAPS2 a ejecutarse 100% en segundo plano
             ]
             if duplex:
                 cmd.append("--duplex")
