@@ -547,6 +547,6 @@ const delay = Math.min(
 
 <br/>
 
-<sub>Oficialía Digital v2.0.0 · H. Congreso de Guanajuato · 2026</sub>
+<sub>Oficialía Digital v2.0.0 · Jesus L. H. C. G. · 2026</sub>
 
 </div>
