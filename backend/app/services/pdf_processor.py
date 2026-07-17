@@ -2,6 +2,8 @@
 
 import base64
 import logging
+import os
+import shutil
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterable
@@ -147,18 +149,24 @@ class PDFProcessor:
                     "El archivo subido no es un PDF válido (Magic Number incorrecto)."
                 )
 
-            # 3. Escritura atómica
-            temp_path = self._settings.raw_pdf_path.with_suffix(".tmp")
+            # 3. Escritura atómica (safe para cross-filesystem)
             final_path = self._settings.raw_pdf_path
-            
+            temp_path = final_path.with_suffix(".tmp")
+
             with open(temp_path, "wb") as pdf_file:
                 pdf_file.write(binary_pdf)
-            
-            temp_path.rename(final_path)
+
+            # Usar shutil.move en vez de rename para manejar cross-filesystem
+            # (común en contenedores Docker donde /tmp puede ser tmpfs)
+            shutil.move(str(temp_path), str(final_path))
 
         except base64.binascii.Error as e:
-            raise PDFProcessingError(f"El string Base64 no es válido: {e}")
+            raise PDFProcessingError(
+                f"El string Base64 no es válido: {e}"
+            ) from e
         except PDFProcessingError:
             raise
         except Exception as e:
-            raise PDFProcessingError(f"Fallo de escritura en almacenamiento temporal: {e}")
+            raise PDFProcessingError(
+                f"Fallo de escritura en almacenamiento temporal: {e}"
+            ) from e
