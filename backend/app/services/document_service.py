@@ -7,6 +7,7 @@ En producción puede migrarse a PostgreSQL/BigQuery.
 import json
 import logging
 import shutil
+import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from sqlite3 import Connection, connect as sqlite_connect
