@@ -9,7 +9,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 from app.schemas import Command, SaveDocumentCommand, StartScanCommand, ApplyEditsCommand, LoadLocalPdfCommand
 from app.services.pdf_processor import PDFProcessor
-from app.services.scanner_service import ScannerService
+from app.services.scanner import ScannerService
 from app.services.document_service import DocumentService
 from app.exceptions import PDFProcessingError
 

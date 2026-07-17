@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 
 from app.config import settings
 from app.handlers.websocket import ScanBridgeHandler
-from app.services.scanner_service import ScannerService
+from app.services.scanner import ScannerService
 from app.services.pdf_processor import PDFProcessor
 from app.services.document_service import DocumentService
 
