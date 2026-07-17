@@ -97,7 +97,7 @@ class ScanBridgeHandler:
             logger.error("Error verificando hardware: %s", e)
             await self._send_event("HARDWARE_STATUS", online=False, error=str(e))
 
-    async def _handle_start_scan(self, cmd: StartScanCommand) -&gt; None:
+    async def _handle_start_scan(self, cmd: StartScanCommand) -> None:
         """Gestiona el inicio del escaneo."""
         logger.info("Iniciando escaneo: DPI=%d, Color=%s", cmd.dpi, cmd.color_mode)
         try:
@@ -114,7 +114,7 @@ class ScanBridgeHandler:
             logger.exception("Fallo durante el escaneo")
             await self._send_error(f"Fallo de escaneo: {e}")
 
-    async def _handle_apply_edits(self, cmd: ApplyEditsCommand) -&gt; None:
+    async def _handle_apply_edits(self, cmd: ApplyEditsCommand) -> None:
         """Aplica metadatos al PDF procesado."""
         logger.info("Aplicando ediciones de metadatos...")
         try:
@@ -125,7 +125,7 @@ class ScanBridgeHandler:
             logger.exception("Error aplicando ediciones")
             await self._send_error(f"Error al editar: {e}")
 
-    async def _handle_load_local_pdf(self, cmd: LoadLocalPdfCommand) -&gt; None:
+    async def _handle_load_local_pdf(self, cmd: LoadLocalPdfCommand) -> None:
         """Carga un PDF local para previsualización."""
         logger.info("Cargando PDF local: %s", cmd.file_path)
         try:
