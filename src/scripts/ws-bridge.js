@@ -115,7 +115,6 @@ function connect() {
 
 const agentEventHandlers = {
   'HARDWARE_STATUS': function (msg) {
-    // Irradiar el estado del hardware de forma asíncrona hacia la UI
     window.dispatchEvent(new CustomEvent('hardware:statusChanged', {
       detail: {
         online: msg.online,
@@ -124,15 +123,27 @@ const agentEventHandlers = {
     }));
   },
 
+  // CORREGIDO: Renombrado a 'SCAN_ACKNOWLEDGED' para evitar colisión
+  // con el evento 'capture:scanStarted' despachado por el frontend.
+  // El servidor solo confirma la recepción; NO re-inicia el estado.
   'SCAN_STARTED': function () {
-    AppState.isScanning = true;
-    AppState.scanProgress = 25;
-    window.dispatchEvent(new CustomEvent('capture:scanStarted'));
+    // Solo actualizamos el progreso si el servidor envía un valor
+    // más alto que el actual (evitar retroceso visual).
+    if (AppState.scanProgress < 25) {
+      AppState.scanProgress = 25;
+    }
+    window.dispatchEvent(new CustomEvent('capture:scanProgress', {
+      detail: { progress: AppState.scanProgress }
+    }));
   },
 
   'scan_status': function (msg) {
     if (typeof msg.progress === 'number' && isFinite(msg.progress)) {
-      AppState.scanProgress = Math.max(0, Math.min(95, Math.round(msg.progress)));
+      // Solo avanzar el progreso, nunca retroceder
+      const clamped = Math.max(0, Math.min(95, Math.round(msg.progress)));
+      if (clamped > AppState.scanProgress) {
+        AppState.scanProgress = clamped;
+      }
     }
     window.dispatchEvent(new CustomEvent('capture:scanProgress', {
       detail: {
