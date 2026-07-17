@@ -25,13 +25,13 @@ class ScanBridgeHandler:
         scanner: ScannerService,
         pdf_processor: PDFProcessor,
         document_service: DocumentService,
-    ) -&gt; None:
+    ) -> None:
         self._websocket = websocket
         self._scanner = scanner
         self._pdf_processor = pdf_processor
         self._document_service = document_service
 
-    async def handle(self) -&gt; None:
+    async def handle(self) -> None:
         """Bucle principal de manejo de conexiones WebSocket."""
         await self._websocket.accept()
         logger.info("Cliente frontend conectado al puente de hardware.")
@@ -64,7 +64,7 @@ class ScanBridgeHandler:
             logger.exception("Error crítico en el bucle WebSocket")
             await self._send_error("Error interno del servidor")
 
-    def _parse_command(self, raw_data: str) -&gt; Command | None:
+    def _parse_command(self, raw_data: str) -> Command | None:
         """Analiza y valida el comando JSON recibido."""
         try:
             import json

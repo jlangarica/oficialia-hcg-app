@@ -98,3 +98,4 @@ class Settings:
                 )
             elif not os.access(parent, os.W_OK):
                 logger.error("Sin permisos de escritura en %s", parent)
+settings = Settings()
