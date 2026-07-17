@@ -52,11 +52,17 @@ function goToStep(target) {
 
     // Despachar eventos específicos por paso (desacoplado)
     window.dispatchEvent(new CustomEvent('wizard:stepChanged', {
-      detail: { to: target }
+      detail: { to: target, from: currentStep }
     }));
 
     if (target === 2) window.dispatchEvent(new CustomEvent('preview:render'));
-    if (target === 3) window.dispatchEvent(new CustomEvent('ai:startProgress'));
+
+    // CORREGIDO: Solo iniciar simulación IA si se navega HACIA ADELANTE al paso 3
+    // (no si se vuelve desde pasos posteriores con ←)
+    if (target === 3 && target > currentStep) {
+      window.dispatchEvent(new CustomEvent('ai:startProgress'));
+    }
+
     if (target === 5) window.dispatchEvent(new CustomEvent('particles:spawn'));
 
     setTimeout(function releaseLock() { isAnimating = false; }, 600);
