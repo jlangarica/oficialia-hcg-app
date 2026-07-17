@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
@@ -108,14 +108,14 @@ async def serve_raw_pdf(path: str | None = None):
         
         # Validar que el archivo existe
         if not pdf_path.exists():
-            return FileResponse(
+            return JSONResponse(
                 status_code=404,
                 content={"error": f"PDF no encontrado: {pdf_path}"}
             )
         
         # Validar que es un archivo (no directorio)
         if not pdf_path.is_file():
-            return FileResponse(
+            return JSONResponse(
                 status_code=400,
                 content={"error": "La ruta no apunta a un archivo válido"}
             )
