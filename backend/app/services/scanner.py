@@ -18,9 +18,8 @@ class ScannerService:
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
-        # ═══ LOCK DE HARDWARE ═══
-        # Evita que peticiones web concurrentes colisionen en el bus USB/SANE
-        self._lock = asyncio.Lock()
+        # Lock para evitar que peticiones concurrentes colisionen en el bus USB/SANE
+        self._lock = asyncio.open() if hasattr(asyncio, "open") else asyncio.Lock()
 
     @property
     def settings(self) -> Settings:
@@ -80,7 +79,6 @@ class ScannerService:
 
     async def detect_hardware_scanner(self) -> str | None:
         """Lista los dispositivos garantizando acceso exclusivo al bus de diagnóstico."""
-        # Si otra conexión ya está usando o diagnosticando el hardware, esperamos nuestro turno
         async with self._lock:
             cmd = [self._settings.scanner_binary, "--list-devices"]
             process: Optional[asyncio.subprocess.Process] = None
@@ -104,9 +102,8 @@ class ScannerService:
                         return devices[0]
                 return None
             except asyncio.TimeoutError:
-                # ═══ CORRECCIÓN CRÍTICA ═══
-                # Si NAPS2/SANE se congela, ejecutamos un kill forzado inmediato
-                logger.error("Timeout detectando hardware (NAPS2 bloqueado). Limpiando proceso zombie...")
+                # Integrado: Limpieza forzada y retorno seguro sin propagar excepción
+                logger.warning("Timeout detectando hardware (NAPS2 bloqueado). Limpiando proceso zombie...")
                 if process and process.returncode is None:
                     try:
                         process.kill()
