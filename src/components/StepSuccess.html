@@ -18,30 +18,19 @@
 
     <div class="folio-box" data-stagger>
       <div class="folio-label">Folio Asignado</div>
-      <div class="folio-value">OF-2026-00042</div>
+      <div class="folio-value" id="successFolio">OF-?????-?????</div>
     </div>
 
-    <div class="checklist" data-stagger>
-      <div class="checklist-item">
-        <span class="material-symbols-outlined">check_circle</span>
-        <span>Subido a Google Drive Institucional</span>
-      </div>
-      <div class="checklist-item">
-        <span class="material-symbols-outlined">check_circle</span>
-        <span>Notificación enviada por Email</span>
-      </div>
-      <div class="checklist-item">
-        <span class="material-symbols-outlined">check_circle</span>
-        <span>Asentado en Libro de Gobierno Digital</span>
-      </div>
+    <div class="checklist" data-stagger id="successChecklist">
+      <!-- Se llena por JS en save-document.js -->
     </div>
 
     <div class="confirm-btns" data-stagger>
-      <button class="btn-full primary" onclick="goToStep(1)">
+      <button class="btn-full primary" onclick="resetWizard()">
         <span class="material-symbols-outlined">post_add</span>
         Escanear Siguiente Documento
       </button>
-      <button class="btn-full ghost" onclick="goToStep(1)">Volver al Inicio</button>
+      <button class="btn-full ghost" onclick="resetWizard()">Volver al Inicio</button>
     </div>
   </div>
 </section>

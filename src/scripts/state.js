@@ -7,7 +7,8 @@ const AppState = {
   pages: [],                   // [{pageIndex, mime, base64, rotation}]
   rawPdfPath: null,
   draggedIndex: null,
-  isSaving: false
+  isSaving: false,
+  lastSavedFolio: null,        // ← NUEVO: folio del último documento guardado
 };
 
 export { AppState };

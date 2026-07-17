@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse
 
 from app.config import Settings
 from app.handlers.websocket import ScanBridgeHandler
+from app.services.document_service import DocumentService
 from app.services.pdf_processor import PDFProcessor
 from app.services.scanner import ScannerService
 
@@ -52,16 +53,19 @@ async def lifespan(app: FastAPI):
     """
     scanner_service = ScannerService(settings)
     pdf_processor = PDFProcessor(settings)
+    document_service = DocumentService(settings)
 
     # Inyección de dependencias a través del estado de la app
     app.state.scanner_service = scanner_service
     app.state.pdf_processor = pdf_processor
+    app.state.document_service = document_service
 
     logger.info(
-        "Servicio iniciado en %s:%d | Raw PDF: %s",
+        "Servicio iniciado en %s:%d | Raw PDF: %s | DB: %s",
         settings.host,
         settings.port,
         settings.raw_pdf_path,
+        settings.raw_pdf_path.parent / "oficialia.db",
     )
     yield
 
@@ -151,8 +155,9 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 
     scanner: ScannerService = app.state.scanner_service
     pdf_proc: PDFProcessor = app.state.pdf_processor
+    doc_service: DocumentService = app.state.document_service
 
-    handler = ScanBridgeHandler(websocket, scanner, pdf_proc)
+    handler = ScanBridgeHandler(websocket, scanner, pdf_proc, doc_service)
     await handler.handle()
 
 

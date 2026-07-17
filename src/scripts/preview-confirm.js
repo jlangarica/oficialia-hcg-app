@@ -1,6 +1,7 @@
 // preview-confirm.js — Confirmación de estructura y re-escaneo
 import { $ } from './helpers.js';
 import { AppState } from './state.js';
+import { resetWizard } from './wizard.js';
 
 function restoreConfirmBtn() {
   const confirmBtn = $('confirmStructureBtn');
@@ -60,25 +61,7 @@ function handleConfirmStructure() {
 }
 
 function handleReScan() {
-  // Liberar referencias pesadas de todas las páginas antes de limpiar el array
-  const pages = AppState.pages || [];
-  for (let i = 0; i < pages.length; i++) {
-    if (pages[i]) {
-      pages[i].base64 = null;
-      pages[i].mime = null;
-    }
-  }
-  AppState.pages = [];
-  AppState.rawPdfPath = null;
-  AppState.isScanning = false;
-  AppState.scanProgress = 0;
-  AppState.draggedIndex = null;
-
-  window.dispatchEvent(new CustomEvent('capture:updateUI'));
-  window.dispatchEvent(new CustomEvent('preview:reScan'));
-  window.dispatchEvent(new CustomEvent('wizard:navigate', {
-    detail: { targetStep: 1 }
-  }));
+  resetWizard();
 }
 
 function initPreviewConfirm() {

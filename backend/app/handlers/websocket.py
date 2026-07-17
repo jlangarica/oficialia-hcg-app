@@ -1,5 +1,6 @@
 """Manejador WebSocket con validación Pydantic y mitigación de desconexiones abruptas."""
 
+import asyncio
 import json
 import logging
 from typing import Any
@@ -20,9 +21,11 @@ from app.schemas import (
     CommandAdapter,
     ExtractMetadataCommand,
     LoadLocalPdfCommand,
+    SaveDocumentCommand,
     StartScanCommand,
 )
 from app.services.ai_extractor import AIExtractorService
+from app.services.document_service import DocumentService
 from app.services.pdf_processor import PDFProcessor
 from app.services.scanner import ScannerService
 
@@ -37,11 +40,13 @@ class ScanBridgeHandler:
         websocket: WebSocket,
         scanner: ScannerService,
         pdf_processor: PDFProcessor,
+        document_service: DocumentService,
     ) -> None:
         self._websocket = websocket
         self._scanner = scanner
         self._pdf_processor = pdf_processor
         self._ai_extractor = AIExtractorService()
+        self._document_service = document_service
 
     async def handle(self) -> None:
         """Bucle principal de mensajes con protección total contra desconexiones en hot-paths."""
@@ -72,6 +77,8 @@ class ScanBridgeHandler:
                     await self._handle_load_local_pdf(command)
                 elif isinstance(command, ExtractMetadataCommand):
                     await self._handle_extract_metadata(command)
+                elif isinstance(command, SaveDocumentCommand):
+                    await self._handle_save_document(command)
                 else:
                     await self._send_error(
                         f"Comando no soportado: {type(command).__name__}"
@@ -219,6 +226,46 @@ class ScanBridgeHandler:
         except Exception as exc:
             logger.exception("Fallo crítico durante el análisis por IA")
             await self._send_error(f"Fallo en motor de extracción inteligente: {str(exc)}")
+
+    async def _handle_save_document(self, cmd: SaveDocumentCommand) -> None:
+        """Gestiona el comando SAVE_DOCUMENT.
+
+        Flujo:
+        1. Recibe metadatos validados desde el Paso 4.
+        2. Invoca DocumentService.save_document() (CPU-bound → thread).
+        3. Devuelve DOCUMENT_SAVED con el folio real generado.
+        """
+        logger.info("Comando recibido: SAVE_DOCUMENT")
+
+        try:
+            # Delegar a thread (I/O: SQLite + shutil.copy2)
+            result = await asyncio.to_thread(
+                self._document_service.save_document,
+                clasificacion=cmd.clasificacion,
+                remitente=cmd.remitente,
+                fecha_doc=cmd.fecha_doc,
+                asunto=cmd.asunto,
+                source_pdf_path=str(self._pdf_processor.settings.processed_pdf_path),
+                total_paginas=cmd.total_paginas,
+                ai_metadata=cmd.ai_metadata,
+                ai_diff=cmd.ai_diff,
+            )
+
+            await self._send_event(
+                "DOCUMENT_SAVED",
+                folio=result["folio"],
+                pdf_path=result["pdf_path"],
+                estatus=result["estatus"],
+                total_paginas=result["total_paginas"],
+            )
+            logger.info("Documento guardado con folio: %s", result["folio"])
+
+        except PDFProcessingError as exc:
+            logger.error("Error guardando documento: %s", exc)
+            await self._send_error(f"Error al guardar: {exc}")
+        except Exception:
+            logger.exception("Error inesperado al guardar documento")
+            await self._send_error("Error interno al guardar el documento")
 
     @staticmethod
     def _thumbnail_to_dict(thumbnail: PageThumbnail) -> dict[str, Any]:

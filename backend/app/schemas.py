@@ -42,9 +42,28 @@ class ExtractMetadataCommand(BaseModel):
     command: Literal["EXTRACT_METADATA"]
 
 
+class SaveDocumentCommand(BaseModel):
+    """Comando para guardar un documento con sus metadatos validados."""
+
+    command: Literal["SAVE_DOCUMENT"]
+    clasificacion: str = Field(min_length=1, max_length=200)
+    remitente: str = Field(min_length=1, max_length=500)
+    fecha_doc: str = Field(  # ISO date: "2026-10-15"
+        min_length=10, max_length=10, pattern=r"^\d{4}-\d{2}-\d{2}$"
+    )
+    asunto: str = Field(min_length=1, max_length=2000)
+    total_paginas: int = Field(ge=0, default=0)
+    ai_metadata: dict | None = None
+    ai_diff: dict | None = None
+
+
 # Tipo unión de todos los comandos reconocidos
 Command = Annotated[
-    StartScanCommand | ApplyEditsCommand | LoadLocalPdfCommand | ExtractMetadataCommand,
+    StartScanCommand
+    | ApplyEditsCommand
+    | LoadLocalPdfCommand
+    | ExtractMetadataCommand
+    | SaveDocumentCommand,
     Field(discriminator="command"),
 ]
 
