@@ -1,11 +1,13 @@
-"""Servicio de escaneo usando NAPS2 CLI y SANE nativo, con soporte multiplataforma y exclusión mutua."""
+"""Servicio de escaneo usando SANE nativo (Linux) y NAPS2 CLI (Windows), con exclusión mutua."""
 
 import asyncio
 import logging
 import os
 import platform
 import shlex
+import shutil
 from typing import Optional
+import fitz  # ◄ Usado para la conversión instantánea y atómica de PNG a PDF en Linux
 
 from app.config import Settings
 from app.exceptions import ScannerError
@@ -20,7 +22,7 @@ class ScannerService:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self._lock = asyncio.Lock()
-        self._detected_device: str | None = None  # ◄ Almacena el dispositivo detectado al conectar
+        self._detected_device: Optional[str] = None
 
     @property
     def settings(self) -> Settings:
@@ -29,100 +31,173 @@ class ScannerService:
     async def scan(
         self, duplex: bool = False, resolution: int | None = None
     ) -> ScanResult:
-        """Ejecuta un escaneo físico forzando el modo oculto y headless en Linux."""
+        """Ejecuta un escaneo físico protegiendo el bus de hardware via Lock."""
         async with self._lock:
+            system = platform.system()
+
             # ════════════════════════════════════════════════════════════
-            # SELECCIÓN INTELIGENTE: Usar dispositivo directo si fue detectado
+            # MODO LINUX: SANE nativo con scanimage (Headless y Robusto)
             # ════════════════════════════════════════════════════════════
-            if self._detected_device:
-                logger.info("Usando dispositivo detectado directamente: %s", self._detected_device)
+            if system == "Linux":
+                if not self._detected_device:
+                    raise ScannerError("No se ha detectado ningún escáner físico activo.")
+
+                # Generamos una imagen temporal limpia en el directorio temporal
+                temp_img_path = str(self._settings.raw_pdf_path.with_suffix(".png"))
+                dpi = resolution or self._settings.default_resolution
+
                 cmd = [
-                    self._settings.scanner_binary,
-                    "-d", self._detected_device,  # ◄ Escanea directo al hardware SANE
-                    "-o", str(self._settings.raw_pdf_path),
-                    "--force",
-                    "--hide-progress",
+                    "scanimage",
+                    "-d", self._detected_device,
+                    "--format", "png",
+                    "--resolution", str(dpi),
+                    "-o", temp_img_path,
                 ]
+
+                duplex_failed = True
+                
+                # Intentamos escaneo duplex en ADF si el usuario lo solicita
+                if duplex:
+                    cmd_duplex = cmd + ["--source", "ADF Duplex"]
+                    logger.info("Intentando escaneo duplex en Linux: %s", shlex.join(cmd_duplex))
+                    process = await asyncio.create_subprocess_exec(
+                        *cmd_duplex,
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE,
+                    )
+                    stdout, stderr = await asyncio.wait_for(
+                        process.communicate(),
+                        timeout=self._settings.scan_timeout,
+                    )
+                    if process.returncode == 0:
+                        duplex_failed = False
+                    else:
+                        logger.warning("Duplex no soportado por este hardware. Reintentando simplex...")
+                        if os.path.exists(temp_img_path):
+                            try:
+                                os.remove(temp_img_path)
+                            except Exception:
+                                pass
+
+                # Fallback o ejecución inicial Simplex
+                if duplex_failed:
+                    logger.info("Ejecutando escaneo simplex en Linux: %s", shlex.join(cmd))
+                    process = await asyncio.create_subprocess_exec(
+                        *cmd,
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE,
+                    )
+                    stdout, stderr = await asyncio.wait_for(
+                        process.communicate(),
+                        timeout=self._settings.scan_timeout,
+                    )
+
+                stdout_str = stdout.decode().strip() if stdout else ""
+                stderr_str = stderr.decode().strip() if stderr else ""
+
+                if process.returncode != 0:
+                    logger.error("scanimage falló con código %d", process.returncode)
+                    if stdout_str:
+                        logger.error("scanimage stdout: %s", stdout_str)
+                    if stderr_str:
+                        logger.error("scanimage stderr: %s", stderr_str)
+                    return ScanResult(
+                        returncode=process.returncode,
+                        stderr=stderr_str or stdout_str or "Error de comunicación con SANE",
+                    )
+
+                # Conversión transparente de PNG a PDF usando PyMuPDF (fitz)
+                try:
+                    if not os.path.exists(temp_img_path):
+                        raise ScannerError("La imagen digitalizada no fue generada.")
+
+                    logger.info("Empaquetando imagen a PDF de forma atómica...")
+                    doc = fitz.open()
+                    img_doc = fitz.open(temp_img_path)
+                    pdf_bytes = img_doc.convert_to_pdf()
+                    pdf_mem = fitz.open("pdf", pdf_bytes)
+                    doc.insert_pdf(pdf_mem)
+                    
+                    # Guardamos el PDF definitivo en la ruta oficial de Oficialía
+                    doc.save(str(self._settings.raw_pdf_path))
+                    doc.close()
+                    img_doc.close()
+
+                    # Limpieza del archivo de imagen temporal
+                    os.remove(temp_img_path)
+                    logger.info("Estructura PDF consolidada con éxito en: %s", self._settings.raw_pdf_path)
+                    return ScanResult(returncode=0, stderr="")
+
+                except Exception as exc:
+                    logger.exception("Fallo crítico en post-procesamiento de imagen a PDF")
+                    return ScanResult(returncode=1, stderr=f"Error al compilar el PDF final: {exc}")
+
+            # ════════════════════════════════════════════════════════════
+            # MODO WINDOWS: NAPS2 nativo (Headless nativo en Windows)
+            # ════════════════════════════════════════════════════════════
             else:
-                logger.warning(
-                    "No se detectó hardware previamente. Intentando con perfil: %s",
-                    self._settings.scanner_profile
-                )
-                cmd = [
-                    self._settings.scanner_binary,
-                    "-o", str(self._settings.raw_pdf_path),
-                    "-p", self._settings.scanner_profile,
-                    "--force",
-                    "--hide-progress",
-                ]
+                if self._detected_device:
+                    cmd = [
+                        self._settings.scanner_binary,
+                        "-d", self._detected_device,
+                        "-o", str(self._settings.raw_pdf_path),
+                        "--force",
+                        "--hide-progress",
+                    ]
+                else:
+                    cmd = [
+                        self._settings.scanner_binary,
+                        "-o", str(self._settings.raw_pdf_path),
+                        "-p", self._settings.scanner_profile,
+                        "--force",
+                        "--hide-progress",
+                    ]
 
-            if duplex:
-                cmd.append("--duplex")
-            if resolution is not None:
-                cmd.extend(["--dpi", str(resolution)])
+                if duplex:
+                    cmd.append("--duplex")
+                if resolution is not None:
+                    cmd.extend(["--dpi", str(resolution)])
 
-            logger.debug("Comando a ejecutar: %s", shlex.join(cmd))
+                logger.debug("Comando Windows a ejecutar: %s", shlex.join(cmd))
 
-            # AISLAMIENTO GRÁFICO: Forzar entorno headless en Linux
-            sub_env = os.environ.copy()
-            if platform.system() == "Linux":
-                sub_env.pop("DISPLAY", None)
-                sub_env.pop("WAYLAND_DISPLAY", None)
+                process = None
+                try:
+                    process = await asyncio.create_subprocess_exec(
+                        *cmd,
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE,
+                    )
+                    stdout, stderr = await asyncio.wait_for(
+                        process.communicate(),
+                        timeout=self._settings.scan_timeout,
+                    )
+                except asyncio.TimeoutError as exc:
+                    logger.error("Timeout de escaneo en Windows")
+                    if process and process.returncode is None:
+                        process.kill()
+                        await process.wait()
+                    raise ScannerError("El escaneo excedió el tiempo límite.") from exc
+                except FileNotFoundError as exc:
+                    raise ScannerError(
+                        f"Binario '{self._settings.scanner_binary}' no encontrado."
+                    ) from exc
+                except Exception as exc:
+                    logger.exception("Error inesperado en Windows")
+                    raise ScannerError(f"Fallo en el proceso de escaneo: {exc}") from exc
 
-            process: Optional[asyncio.subprocess.Process] = None
-            try:
-                process = await asyncio.create_subprocess_exec(
-                    *cmd,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                    env=sub_env,
-                )
-                stdout, stderr = await asyncio.wait_for(
-                    process.communicate(),
-                    timeout=self._settings.scan_timeout,
-                )
-            except asyncio.TimeoutError as exc:
-                logger.error("Timeout de escaneo alcanzado (%d s)", self._settings.scan_timeout)
-                if process and process.returncode is None:
-                    process.kill()
-                    await process.wait()
-                raise ScannerError("El escaneo excedió el tiempo límite.") from exc
-            except FileNotFoundError as exc:
-                raise ScannerError(
-                    f"Binario '{self._settings.scanner_binary}' no encontrado. "
-                    f"Sistema operativo: {platform.system()}."
-                ) from exc
-            except Exception as exc:
-                logger.exception("Error inesperado durante el escaneo")
-                raise ScannerError(f"Fallo en el proceso de escaneo: {exc}") from exc
+                if process is None:
+                    raise ScannerError("No se pudo iniciar el proceso de escaneo.")
 
-            if process is None:
-                raise ScannerError("No se pudo iniciar el proceso de escaneo.")
+                stdout_str = stdout.decode().strip() if stdout else ""
+                stderr_str = stderr.decode().strip() if stderr else ""
 
-            # ════════════════════════════════════════════════════════════
-            # CAPTURA INTELIGENTE DE ERRORES (Une stdout y stderr para ver la realidad)
-            # ════════════════════════════════════════════════════════════
-            stdout_str = stdout.decode().strip() if stdout else ""
-            stderr_str = stderr.decode().strip() if stderr else ""
+                if process.returncode != 0:
+                    return ScanResult(
+                        returncode=process.returncode,
+                        stderr=stderr_str or stdout_str or f"Error Windows (Código: {process.returncode})",
+                    )
 
-            if process.returncode != 0:
-                logger.error("NAPS2 falló con código de retorno %d", process.returncode)
-                if stdout_str:
-                    logger.error("NAPS2 stdout: %s", stdout_str)
-                if stderr_str:
-                    logger.error("NAPS2 stderr: %s", stderr_str)
-
-                # Si stderr está vacío, extraemos el error de stdout para no devolver un string en blanco
-                combined_error = stderr_str or stdout_str or f"Error de subproceso (Código: {process.returncode})"
-                return ScanResult(
-                    returncode=process.returncode,
-                    stderr=combined_error,
-                )
-
-            return ScanResult(
-                returncode=process.returncode,
-                stderr="",
-            )
+                return ScanResult(returncode=0, stderr="")
 
     async def detect_hardware_scanner(self) -> str | None:
         """Lista los dispositivos evitando popups gráficos mediante SANE nativo en Linux."""
@@ -154,7 +229,6 @@ class ScannerService:
                         ]
                         if devices:
                             logger.info("Escáner físico SANE detectado: %s", devices[0])
-                            # ◄ GUARDAMOS EL HARDWARE: Se usará directamente al escanear
                             self._detected_device = devices[0]
                             return devices[0]
                     else:
