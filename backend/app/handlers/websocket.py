@@ -137,7 +137,7 @@ class ScanBridgeHandler:
 
     # ─── NUEVO HANDLER ────────────────────────────────────────────
 
-    async def _handle_save_document(self, cmd: SaveDocumentCommand) -&gt; None:
+    async def _handle_save_document(self, cmd: SaveDocumentCommand) -> None:
         """Gestiona el comando SAVE_DOCUMENT.
 
         Flujo:
