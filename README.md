@@ -379,15 +379,21 @@ El frontend y backend se comunican mediante un canal WebSocket bidireccional con
 // Carga de PDF local (sin escáner)
 {
   "command": "LOAD_LOCAL_PDF",
-  "base64_data": "data:application/pdf;base64,JVBERi0x..."
+  // Contenido del archivo en formato base64, sin prefijo data: URI
+  "base64_data": "JVBERi0x..."
 }
 ```
+
+> **Validaciones Pydantic:**
+> *   `resolution`: 50–1200 DPI (`StartScanCommand`)
+> *   `source_index`: ≥ 0 (`EditOperationSchema`)
+> *   `operations`: Al menos 1 operación requerida (`ApplyEditsCommand`)
 
 ### Eventos (Backend → Frontend)
 
 | Evento | Payload | Descripción |
 |---|---|---|
-| `HARDWARE_STATUS` | `{ online, model }` | Estado del escáner físico |
+| `HARDWARE_STATUS` | `{ online, model }` | Estado del escáner. `model` es el nombre del dispositivo o "Ninguno detectado". |
 | `SCAN_STARTED` | — | Escaneo iniciado |
 | `scan_status` | `{ progress, message }` | Progreso del escaneo (0–100) |
 | `SCAN_COMPLETED` | `{ output_path }` | PDF generado en disco |
@@ -537,16 +543,18 @@ const delay = Math.min(
 
 ## 🗺️ Roadmap
 
+- [x] Validación de magic bytes en carga de PDF
+- [x] Implementación parcial del Step 3 (vista marcador de posición)
 - [ ] Autenticación de WebSocket (token compartido)
-- [ ] Validación de magic bytes en carga de PDF
-- [ ] Implementación completa del Step 3 (progreso IA)
-- [ ] Persistencia de estado entre sesiones
-- [ ] Exportación de metadatos en formato CSV/XML
+- [ ] Implementación funcional del Step 3 (extracción IA real)
+- [ ] Persistencia de estado entre sesiones (localStorage)
+- [ ] Exportación de metadatos (CSV/XML)
 - [ ] Integración con Google Drive API
 - [ ] Notificaciones por correo electrónico
 - [ ] Soporte para múltiples escáneres simultáneos
-- [ ] Panel de administración de documentos archivados
-- [ ] Pruebas unitarias y de integración
+- [ ] Panel de administración de documentos
+- [ ] Pruebas unitarias y de integración (backend y frontend)
+- [ ] Refactorización a TypeScript
 
 ---
 
