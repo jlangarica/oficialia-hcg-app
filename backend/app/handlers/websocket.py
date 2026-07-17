@@ -80,7 +80,7 @@ class ScanBridgeHandler:
         payload = {"type": event_type, **data}
         await self._websocket.send_json(payload)
 
-    async def _send_error(self, message: str) -&gt; None:
+    async def _send_error(self, message: str) -> None:
         """Envía un mensaje de error al cliente."""
         await self._send_event("ERROR", message=message)
 
