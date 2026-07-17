@@ -62,7 +62,9 @@ function connect() {
   teardownSocket();
 
   AppState.wsStatus = 'CONNECTING';
-  syncConnectionUI();
+  window.dispatchEvent(new CustomEvent('ws:statusChanged', {
+    detail: { status: 'CONNECTING' }
+  }));
 
   try {
     ws = new WebSocket(WS_URL);
@@ -102,7 +104,6 @@ function connect() {
     ws = null;
     AppState.wsStatus = 'DISCONNECTED';
     AppState.scannerOnline = false; // ◄ Seguro: si no hay servidor, el hardware cae
-    syncConnectionUI();
     window.dispatchEvent(new CustomEvent('ws:statusChanged', { detail: { status: 'DISCONNECTED' } }));
     scheduleReconnect();
   };
