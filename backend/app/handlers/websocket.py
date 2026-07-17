@@ -13,7 +13,8 @@ from app.exceptions import (
     ValidationError,
 )
 from app.models import PageThumbnail
-from app.schemas import ApplyEditsCommand, Command, StartScanCommand, LoadLocalPdfCommand
+# ◄ CORREGIDO: Importamos CommandAdapter para resolver la unión discriminada
+from app.schemas import ApplyEditsCommand, Command, CommandAdapter, StartScanCommand, LoadLocalPdfCommand
 from app.services.pdf_processor import PDFProcessor
 from app.services.scanner import ScannerService
 
@@ -39,21 +40,15 @@ class ScanBridgeHandler:
         logger.info("Cliente frontend conectado al puente de hardware.")
 
         try:
-            # ════════════════════════════════════════════════════════════
             # DIAGNÓSTICO INICIAL: Protegido por el bloque try externo
-            # ════════════════════════════════════════════════════════════
             scanner_model = await self._scanner.detect_hardware_scanner()
             
-            # Si el cliente cerró el socket en los 10s de espera, send_text lanzará 
-            # WebSocketDisconnect e irá directo al bloque except sin romper Uvicorn.
             if scanner_model:
                 await self._send_event("HARDWARE_STATUS", online=True, model=scanner_model)
             else:
                 await self._send_event("HARDWARE_STATUS", online=False, model="Ninguno detectado")
 
-            # ════════════════════════════════════════════════════════════
             # BUCLE DE COMANDOS ELECTIVO
-            # ════════════════════════════════════════════════════════════
             while True:
                 raw_data = await self._websocket.receive_text()
                 command = self._parse_command(raw_data)
@@ -71,7 +66,6 @@ class ScanBridgeHandler:
                         f"Comando no soportado: {type(command).__name__}"
                     )
         except WebSocketDisconnect:
-            # Captura limpia: Maneja el abandono de la conexión de forma elegante
             logger.info("Un canal WebSocket previo fue liberado o abandonado por el frontend.")
         except Exception:
             logger.exception("Error crítico inesperado en el bus del WebSocket")
@@ -89,7 +83,8 @@ class ScanBridgeHandler:
             return None
 
         try:
-            return Command(**payload)  # type: ignore[arg-type]
+            # ◄ CORREGIDO: Consumir la validación directa del adaptador de Pydantic v2
+            return CommandAdapter.validate_python(payload)
         except PydanticValidationError as exc:
             self._send_error_sync(f"Error de validación: {exc.errors()}")
             return None
