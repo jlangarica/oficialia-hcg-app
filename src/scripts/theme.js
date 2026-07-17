@@ -3,7 +3,9 @@
 function toggleTheme() {
   const html = document.documentElement;
   if (html) {
-    html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('oficialia-theme', next);
   }
 }
 
