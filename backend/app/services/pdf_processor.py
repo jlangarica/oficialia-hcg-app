@@ -130,17 +130,35 @@ class PDFProcessor:
         return processed_path
 
     def save_pdf_from_base64(self, b64_data: str) -> None:
-        """Decodifica un string base64, limpia metadatos de DataURL si existen
-        y escribe el archivo PDF real en la ruta del repositorio temporal.
+        """Decodifica un string base64, valida que sea un PDF y lo guarda de
+        forma atómica en el almacenamiento temporal.
         """
         try:
             if "," in b64_data:
                 # Separar el encabezado 'data:application/pdf;base64,' del flujo puro
                 b64_data = b64_data.split(",", 1)[1]
+
+            # 1. Validar y decodificar Base64
+            binary_pdf = base64.b64decode(b64_data, validate=True)
+
+            # 2. Validar Magic Number de PDF
+            if not binary_pdf.startswith(b"%PDF-"):
+                raise PDFProcessingError(
+                    "El archivo subido no es un PDF válido (Magic Number incorrecto)."
+                )
+
+            # 3. Escritura atómica
+            temp_path = self._settings.raw_pdf_path.with_suffix(".tmp")
+            final_path = self._settings.raw_pdf_path
             
-            binary_pdf = base64.b64decode(b64_data)
-            
-            with open(self._settings.raw_pdf_path, "wb") as pdf_file:
+            with open(temp_path, "wb") as pdf_file:
                 pdf_file.write(binary_pdf)
+            
+            temp_path.rename(final_path)
+
+        except base64.binascii.Error as e:
+            raise PDFProcessingError(f"El string Base64 no es válido: {e}")
+        except PDFProcessingError:
+            raise
         except Exception as e:
             raise PDFProcessingError(f"Fallo de escritura en almacenamiento temporal: {e}")
