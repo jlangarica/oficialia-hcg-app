@@ -1,0 +1,42 @@
+/* src/styles/module-router.css */
+
+/* Las vistas de módulo se comportan como el wizard-viewport */
+.module-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  transition: opacity 0.25s var(--spring-smooth);
+  contain: layout style;
+}
+
+.module-view.hidden {
+  display: none;
+  opacity: 0;
+}
+
+/* Nav item activo en sidebar (ya existe en sidebar.css, solo asegurar que 
+   funcione con data-module en vez de solo la primera posicion) */
+.nav-item[data-module].active {
+  background: var(--bg-glass);
+  border-left: 3px solid var(--blue);
+  box-shadow: 0 0 20px var(--blue-glow);
+}
+
+/* Nav item locked (futuro) */
+.nav-item.locked {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Wizard viewport hidden state for module switching */
+.wizard-viewport.hidden {
+  display: none;
+}
+
+/* Stepper hidden state */
+.stepper.hidden {
+  visibility: hidden;
+  opacity: 0;
+}
