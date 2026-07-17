@@ -75,7 +75,7 @@ class ScanBridgeHandler:
             asyncio.create_task(self._send_error(f"Formato de comando inválido: {e}"))
             return None
 
-    async def _send_event(self, event_type: str, **data: Any) -&gt; None:
+    async def _send_event(self, event_type: str, **data: Any) -> None:
         """Envía un evento estructurado al cliente."""
         payload = {"type": event_type, **data}
         await self._websocket.send_json(payload)
