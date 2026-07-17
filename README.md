@@ -272,12 +272,15 @@ jlangarica-oficialia-hcg-app/
 
 ### Prerrequisitos
 
-| Requisito | Versión mínima | Verificación |
-|---|---|---|
-| **Python** | ≥ 3.10 | `python3 --version` |
-| **Node.js** | ≥ 18.x | `node --version` |
-| **NAPS2** | ≥ 7.x | `naps2.console --version` |
-| **pip** | ≥ 23.x | `pip --version` |
+| Requisito | Versión mínima | Verificación | Plataforma |
+|---|---|---|---|
+| **Python** | ≥ 3.10 | `python3 --version` | Todas |
+| **Node.js** | ≥ 18.x | `node --version` | Todas |
+| **NAPS2** | ≥ 7.x | `naps2.console --version` | Todas |
+| **pip** | ≥ 23.x | `pip --version` | Todas |
+| **sane-utils**| (distro) | `scanimage -L` | Linux |
+
+> **Nota sobre Linux:** Para la detección automática de escáneres (`scanimage -L`), es necesario instalar el paquete `sane-utils` (o similar, dependiendo de la distribución). El escaneo se realiza directamente con `naps2.console` usando el dispositivo detectado (`-d <device>`).
 
 ### Backend
 
@@ -329,8 +332,8 @@ Todas las configuraciones se gestionan mediante variables de entorno con el pref
 
 | Variable | Default | Descripción |
 |---|---|---|
-| `SCANBRIDGE_RAW_PDF_PATH` | `/tmp/raw_scan.pdf` | Ruta temporal del PDF escaneado |
-| `SCANBRIDGE_PROCESSED_PDF_PATH` | `/tmp/oficialia_final_processed.pdf` | Ruta del PDF procesado final |
+| `SCANBRIDGE_RAW_PDF_PATH` | (OS temp dir)`/raw_scan.pdf` | Ruta temporal del PDF escaneado. Usa `tempfile.gettempdir()`. |
+| `SCANBRIDGE_PROCESSED_PDF_PATH` | (OS temp dir)`/oficialia_final_processed.pdf` | Ruta del PDF procesado final. Usa `tempfile.gettempdir()`. |
 | `SCANBRIDGE_SCANNER_PROFILE` | `Oficialia_Estandar` | Perfil de escáner NAPS2 |
 | `SCANBRIDGE_DEFAULT_RESOLUTION` | `300` | DPI por defecto para escaneo |
 | `SCANBRIDGE_THUMBNAIL_DPI` | `72` | DPI para generación de miniaturas |
@@ -413,6 +416,21 @@ El frontend y backend se comunican mediante un canal WebSocket bidireccional con
     │                         │── PyMuPDF edit        │
     │◀── EDITS_APPLIED ──────│                       │
     │                         │                       │
+```
+
+### Orígenes WebSocket Permitidos
+
+Por seguridad, el servidor solo acepta conexiones de orígenes específicos. Estos se configuran mediante la variable de entorno `SCANBRIDGE_ALLOWED_ORIGINS`.
+
+- **Formato**: Una lista de URLs separadas por comas.
+- **Default**: `http://localhost:5173,http://127.0.0.1:5173` (servidor de desarrollo de Vite).
+- **Producción**: Debes configurar esta variable para que coincida con el dominio donde se sirve el frontend.
+
+#### Ejemplo de configuración
+
+```bash
+# Permitir solo el dominio de producción y un alias local
+export SCANBRIDGE_ALLOWED_ORIGINS="https://oficialia.miinstitucion.gob,http://localhost:8080"
 ```
 
 ---
