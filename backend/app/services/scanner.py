@@ -1,8 +1,10 @@
-"""Servicio de interacción con el CLI de NAPS2."""
+"""Servicio de escaneo usando NAPS2 CLI, con soporte multiplataforma."""
 
 import asyncio
 import logging
-from pathlib import Path
+import platform  # ◄ CORREGIDO: Importado para evitar NameError en excepciones
+import shlex
+from typing import Optional
 
 from app.config import Settings
 from app.exceptions import ScannerError
@@ -12,38 +14,33 @@ logger = logging.getLogger(__name__)
 
 
 class ScannerService:
-    """Encapsula la interacción con el CLI de NAPS2.
-
-    Gestiona timeouts y cancelación segura del subproceso.
-    """
+    """Encapsula la interacción con el CLI de NAPS2."""
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
 
     @property
     def settings(self) -> Settings:
-        """Expone la configuración inmutable del servicio."""
         return self._settings
 
     async def scan(
         self, duplex: bool = False, resolution: int | None = None
     ) -> ScanResult:
-        """Ejecuta NAPS2 y devuelve el resultado del proceso.
+        """
+        Ejecuta un escaneo utilizando el binario configurado automáticamente.
 
         Args:
-            duplex: Habilita el escaneo a doble cara.
-            resolution: DPI de escaneo. Si es None, se usa el valor
-                configurado en Settings.
+            duplex: Activa el escaneo a doble cara.
+            resolution: DPI personalizado (usa default si es None).
 
         Returns:
-            Instancia de ScanResult con el código de retorno y stderr.
+            ScanResult con el código de salida y stderr.
 
         Raises:
-            ScannerError: Si el ejecutable no se encuentra, el proceso
-                excede el tiempo límite o no puede iniciarse.
+            ScannerError: Si el proceso falla, timeout o binario no encontrado.
         """
         cmd = [
-            "naps2.console",
+            self._settings.scanner_binary,
             "-o", str(self._settings.raw_pdf_path),
             "-p", self._settings.scanner_profile,
             "--force",
@@ -53,7 +50,9 @@ class ScannerService:
         if resolution is not None:
             cmd.extend(["--dpi", str(resolution)])
 
-        process: asyncio.subprocess.Process | None = None
+        logger.debug("Comando a ejecutar: %s", shlex.join(cmd))
+
+        process: Optional[asyncio.subprocess.Process] = None
         try:
             process = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -64,80 +63,57 @@ class ScannerService:
                 process.communicate(),
                 timeout=self._settings.scan_timeout,
             )
-        except asyncio.TimeoutError as exc:
-            logger.error(
-                "Timeout durante el escaneo con NAPS2 después de %ds",
-                self._settings.scan_timeout,
-            )
-            if process is not None and process.returncode is None:
+        except asyncio.TimeoutError:
+            logger.error("Timeout de escaneo alcanzado (%d s)", self._settings.scan_timeout)
+            if process and process.returncode is None:
                 process.kill()
                 await process.wait()
-            raise ScannerError(
-                f"El escaneo excedió el tiempo límite de "
-                f"{self._settings.scan_timeout}s"
-            ) from exc
+            raise ScannerError("El escaneo excedió el tiempo límite.")
         except FileNotFoundError as exc:
             raise ScannerError(
-                "El ejecutable naps2.console no fue encontrado en el PATH"
+                f"Binario '{self._settings.scanner_binary}' no encontrado. "
+                f"Sistema operativo: {platform.system()}. Verifica la instalación de NAPS2."
             ) from exc
         except Exception as exc:
-            logger.exception("Error inesperado al ejecutar NAPS2")
-            raise ScannerError(
-                f"Error al ejecutar el proceso de escaneo: {exc}"
-            ) from exc
+            logger.exception("Error inesperado durante el escaneo")
+            raise ScannerError(f"Fallo en el proceso de escaneo: {exc}") from exc
 
         if process is None:
-            raise ScannerError("No se pudo iniciar el proceso de escaneo")
+            raise ScannerError("No se pudo iniciar el proceso de escaneo.")
 
         return ScanResult(
             returncode=process.returncode,
-            stderr=stderr.decode().strip(),
+            stderr=stderr.decode().strip() if stderr else "",
         )
 
     async def detect_hardware_scanner(self) -> str | None:
-        """Ejecuta NAPS2 para listar dispositivos USB/Red conectados.
-
-        Retorna el nombre del primer escáner real encontrado o None.
-        Maneja de forma segura la ausencia del ejecutable.
         """
-        cmd = ["naps2.console", "--list-devices"]
-        process: asyncio.subprocess.Process | None = None
+        Lista los dispositivos de escaneo y devuelve el primero encontrado,
+        o None si no hay ninguno disponible.
+        """
+        cmd = [self._settings.scanner_binary, "--list-devices"]
         try:
             process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, _stderr = await asyncio.wait_for(
-                process.communicate(), timeout=10
-            )
+            stdout, _ = await asyncio.wait_for(process.communicate(), timeout=10)
 
             if process.returncode == 0 and stdout:
-                lines = stdout.decode().strip().split('\n')
+                lines = stdout.decode().strip().splitlines()
                 devices = [
                     line.strip()
                     for line in lines
                     if line.strip() and not line.startswith("---")
                 ]
                 if devices:
+                    logger.info("Dispositivos detectados: %s", devices)
                     return devices[0]
             return None
         except FileNotFoundError:
-            logger.warning(
-                "El ejecutable 'naps2.console' no fue encontrado. "
-                "La detección de escáner está deshabilitada."
-            )
+            logger.warning("Binario NAPS2 no encontrado durante diagnóstico.")
             return None
-        except asyncio.TimeoutError:
-            logger.warning(
-                "Timeout al buscar escáneres con 'naps2.console'."
-            )
-            if process is not None and process.returncode is None:
-                process.kill()
-                await process.wait()
-            return None
-        except Exception as e:
-            logger.error(
-                "Fallo inesperado al diagnosticar hardware: %s", e
-            )
+        except Exception:
+            logger.exception("Error al detectar hardware de escáner.")
             return None
