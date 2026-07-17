@@ -1,14 +1,19 @@
-// state.js — Contrato inmutable de estado de la aplicación
+// src/scripts/state.js
+/**
+ * Estado global reactivo de la aplicación.
+ * Centraliza los datos compartidos entre componentes.
+ */
+
 const AppState = {
-  wsStatus: 'DISCONNECTED',   // CONNECTING | CONNECTED | DISCONNECTED
-  scannerOnline: false,       // ◄ CONTROL DE PRESENCIA FÍSICA DEL ESCÁNER
+  wsStatus: 'DISCONNECTED',
+  scannerOnline: false,
   isScanning: false,
   scanProgress: 0,
-  pages: [],                   // [{pageIndex, mime, base64, rotation}]
+  pages: [],
   rawPdfPath: null,
   draggedIndex: null,
   isSaving: false,
-  lastSavedFolio: null,        // ← NUEVO: folio del último documento guardado
+  lastSavedFolio: null,    // ← NUEVO: folio del último documento guardado
 };
 
 export { AppState };
