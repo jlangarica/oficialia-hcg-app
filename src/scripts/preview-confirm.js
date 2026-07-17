@@ -34,7 +34,6 @@ function handleConfirmStructure() {
   try {
     if (AppState.wsStatus === 'CONNECTED' && typeof window.sendScannerCommand === 'function') {
       sent = window.sendScannerCommand('APPLY_EDITS', {
-        input_path: AppState.rawPdfPath || '/tmp/raw_scan.pdf',
         operations: operations
       }) === true;
     }

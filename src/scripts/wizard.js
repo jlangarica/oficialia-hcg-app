@@ -4,15 +4,6 @@ import { AppState } from './state.js';
 
 let currentStep = 1;
 let isAnimating = false;
-let aiTimer = null;
-let progressTimer = null;
-let scanSimTimer = null;
-
-function clearWizardTimers() {
-  if (aiTimer) { clearTimeout(aiTimer); aiTimer = null; }
-  if (progressTimer) { clearInterval(progressTimer); progressTimer = null; }
-  if (scanSimTimer) { clearInterval(scanSimTimer); scanSimTimer = null; }
-}
 
 /**
  * Transición atómica: el lock `isAnimating` cubre TODO el ciclo
@@ -29,7 +20,6 @@ function goToStep(target) {
   }
 
   isAnimating = true;
-  clearWizardTimers();
 
   const direction = target > currentStep ? 1 : -1;
   const offsetOut = -direction * 16;
