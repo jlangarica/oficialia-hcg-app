@@ -4,27 +4,21 @@ import { AppState } from './state.js';
 import { updateScanRing } from './progress-zoom.js';
 
 function updateConnectionIndicators() {
-  const serverBadge = $('serverStatusBadge');
   const serverDot = $('serverStatusDot');
   const serverText = $('serverStatusText');
+  if (!serverDot || !serverText) return;
 
-  if (!serverBadge || !serverDot || !serverText) return;
+  // CORREGIDO: Usar clases semánticas en vez de inline styles
+  serverDot.classList.remove('is-online', 'is-connecting');
 
-  // 1. Manejar visualmente el estado del software (WebSocket)
   if (AppState.wsStatus === 'CONNECTED') {
-    serverDot.style.background = 'var(--green)';
-    serverDot.style.boxShadow = '0 0 6px rgba(50,215,75,0.4)';
+    serverDot.classList.add('is-online');
     serverText.textContent = 'Servidor: Activo';
   } else if (AppState.wsStatus === 'CONNECTING') {
-    serverDot.style.background = 'var(--orange)';
-    serverDot.style.boxShadow = '0 0 6px rgba(255,159,10,0.4)';
+    serverDot.classList.add('is-connecting');
     serverText.textContent = 'Servidor: Conectando...';
   } else {
-    serverDot.style.background = 'var(--red)';
-    serverDot.style.boxShadow = '0 0 6px rgba(255,69,58,0.4)';
     serverText.textContent = 'Servidor: Offline';
-    
-    // Si el servidor cae, por defecto el hardware también está offline
     updateHardwareIndicator(false, 'Desconectado');
   }
 }
