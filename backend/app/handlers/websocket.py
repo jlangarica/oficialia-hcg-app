@@ -1,5 +1,7 @@
 """Manejador WebSocket con validación Pydantic y orquestación de servicios."""
 
+
+import asyncio
 import json
 import logging
 from typing import Any
@@ -12,8 +14,13 @@ from app.exceptions import (
     ScannerError,
     ValidationError,
 )
-from app.models import PageThumbnail
-from app.schemas import ApplyEditsCommand, Command, StartScanCommand, LoadLocalPdfCommand
+from app.models import EditOperation, PageThumbnail
+from app.schemas import (
+    ApplyEditsCommand,
+    Command,
+    LoadLocalPdfCommand,
+    StartScanCommand,
+)
 from app.services.pdf_processor import PDFProcessor
 from app.services.scanner import ScannerService
 
@@ -43,14 +50,18 @@ class ScanBridgeHandler:
         await self._websocket.accept()
         logger.info("Cliente frontend conectado al puente de hardware.")
 
-        # ════════════════════════════════════════════════════════════
-        # DIAGNÓSTICO INICIAL: Detectar presencia de hardware real
-        # ════════════════════════════════════════════════════════════
+        # Diagnosticar presencia de hardware real
         scanner_model = await self._scanner.detect_hardware_scanner()
         if scanner_model:
-            await self._send_event("HARDWARE_STATUS", online=True, model=scanner_model)
+            await self._send_event(
+                "HARDWARE_STATUS", online=True, model=scanner_model
+            )
         else:
-            await self._send_event("HARDWARE_STATUS", online=False, model="Ninguno detectado")
+            await self._send_event(
+                "HARDWARE_STATUS",
+                online=False,
+                model="Ninguno detectado",
+            )
 
         try:
             while True:
@@ -86,34 +97,32 @@ class ScanBridgeHandler:
         """
         try:
             payload = json.loads(raw_data)
-        except json.JSONDecodeError as exc:
-            self._send_error_sync("El payload no es un JSON válido")
+        except json.JSONDecodeError:
+            self._send_error_async("El payload no es un JSON válido")
             return None
 
         try:
-            # Usamos el tipo discriminado para identificar el comando
             return Command(**payload)  # type: ignore[arg-type]
         except PydanticValidationError as exc:
-            # Enviamos el error al cliente de forma asíncrona
-            self._send_error_sync(
+            self._send_error_async(
                 f"Error de validación: {exc.errors()}"
             )
             return None
 
-    def _send_error_sync(self, message: str) -> None:
-        """Versión síncrona para enviar errores desde el parser."""
-        # Creamos una tarea asíncrona para enviar el error
-        # sin bloquear el parser. Como estamos dentro del bucle
-        # asíncrono, podemos programar la corutina.
-        asyncio_task = self._send_error(message)
-        # En caso de que el bucle de eventos no esté disponible,
-        # no hacemos nada (caso improbable en este contexto).
-        import asyncio
+    def _send_error_async(self, message: str) -> None:
+        """Programa el envío de un error sin bloquear el parser.
+
+        Usa asyncio.create_task para no bloquear el flujo síncrono
+        del parser de comandos.
+        """
         try:
             loop = asyncio.get_running_loop()
-            loop.create_task(asyncio_task)
+            loop.create_task(self._send_error(message))
         except RuntimeError:
-            pass
+            # No hay event loop disponible (caso improbable)
+            logger.error(
+                "No se pudo enviar error WebSocket: sin event loop"
+            )
 
     async def _handle_start_scan(self, cmd: StartScanCommand) -> None:
         """Gestiona el comando START_SCAN."""
@@ -129,7 +138,9 @@ class ScanBridgeHandler:
             )
         except ScannerError as exc:
             logger.error("Error de escaneo: %s", exc)
-            await self._send_error(f"Error de hardware en el escáner: {exc}")
+            await self._send_error(
+                f"Error de hardware en el escáner: {exc}"
+            )
             return
 
         if not result.success:
@@ -148,7 +159,10 @@ class ScanBridgeHandler:
         )
 
         try:
-            pages = self._pdf_processor.generate_thumbnails()
+            # Delegar operación CPU-bound al pool de threads
+            pages = await asyncio.to_thread(
+                self._pdf_processor.generate_thumbnails
+            )
             await self._send_event(
                 "THUMBNAILS_READY",
                 pages=[self._thumbnail_to_dict(p) for p in pages],
@@ -160,23 +174,26 @@ class ScanBridgeHandler:
             )
         except Exception:
             logger.exception("Error inesperado generando thumbnails")
-            await self._send_error("Error interno al generar vistas previas")
+            await self._send_error(
+                "Error interno al generar vistas previas"
+            )
 
     async def _handle_apply_edits(self, cmd: ApplyEditsCommand) -> None:
         """Gestiona el comando APPLY_EDITS."""
         logger.info("Comando recibido: APPLY_EDITS")
-        # Convertir de schemas a modelos de dominio
-        from app.models import EditOperation
 
         operations = [
             EditOperation(
-                source_index=op.source_index, rotation=op.rotation
+                source_index=op.source_index,
+                rotation=op.rotation,
             )
             for op in cmd.operations
         ]
 
         try:
-            final_path = self._pdf_processor.apply_edits(operations)
+            final_path = await asyncio.to_thread(
+                self._pdf_processor.apply_edits, operations
+            )
             await self._send_event(
                 "EDITS_APPLIED", output_path=str(final_path)
             )
@@ -187,7 +204,51 @@ class ScanBridgeHandler:
             )
         except Exception:
             logger.exception("Error inesperado aplicando ediciones")
-            await self._send_error("Error interno al aplicar modificaciones")
+            await self._send_error(
+                "Error interno al aplicar modificaciones"
+            )
+
+    async def _handle_load_local_pdf(self, cmd: LoadLocalPdfCommand) -> None:
+        """Gestiona el comando LOAD_LOCAL_PDF."""
+        logger.info("Comando recibido: LOAD_LOCAL_PDF")
+        await self._send_event("SCAN_STARTED")
+        await self._send_scan_status(
+            25, "Inyectando flujo binario en repositorio..."
+        )
+
+        try:
+            # Escritura de archivo: también delegar a thread
+            await asyncio.to_thread(
+                self._pdf_processor.save_pdf_from_base64,
+                cmd.base64_data,
+            )
+
+            await self._send_scan_status(
+                60, "Archivo verificado. Extrayendo páginas..."
+            )
+            await self._send_event(
+                "SCAN_COMPLETED",
+                output_path=str(self._scanner.settings.raw_pdf_path),
+            )
+
+            # Generación de miniaturas en thread separado
+            pages = await asyncio.to_thread(
+                self._pdf_processor.generate_thumbnails
+            )
+            await self._send_event(
+                "THUMBNAILS_READY",
+                pages=[self._thumbnail_to_dict(p) for p in pages],
+            )
+            logger.info(
+                "PDF inyectado con éxito: %d páginas procesadas.",
+                len(pages),
+            )
+
+        except Exception as exc:
+            logger.error("Error procesando PDF local: %s", exc)
+            await self._send_error(
+                f"Fallo al procesar el PDF cargado: {exc}"
+            )
 
     @staticmethod
     def _thumbnail_to_dict(thumbnail: PageThumbnail) -> dict[str, Any]:
@@ -203,7 +264,9 @@ class ScanBridgeHandler:
         message = {"event": event, **kwargs}
         await self._websocket.send_text(json.dumps(message))
 
-    async def _send_scan_status(self, progress: int, message: str) -> None:
+    async def _send_scan_status(
+        self, progress: int, message: str
+    ) -> None:
         """Envía un evento de estado de progreso del escaneo."""
         await self._send_event(
             "scan_status", progress=progress, message=message
@@ -212,30 +275,3 @@ class ScanBridgeHandler:
     async def _send_error(self, message: str) -> None:
         """Envía un evento de error al cliente."""
         await self._send_event("SCAN_ERROR", message=message)
-
-    async def _handle_load_local_pdf(self, cmd: LoadLocalPdfCommand) -> None:
-        logger.info("Comando recibido: LOAD_LOCAL_PDF")
-        await self._send_event("SCAN_STARTED")
-        await self._send_scan_status(25, "Inyectando flujo binario en repositorio...")
-
-        try:
-            # 1. Guardar archivo en disco real (/tmp o raw_pdf_path)
-            self._pdf_processor.save_pdf_from_base64(cmd.base64_data)
-            
-            await self._send_scan_status(60, "Archivo verificado. Extrayendo páginas...")
-            await self._send_event(
-                "SCAN_COMPLETED",
-                output_path=str(self._scanner.settings.raw_pdf_path),
-            )
-            
-            # 2. Generar miniaturas de imagen reales mediante PyMuPDF del archivo cargado
-            pages = self._pdf_processor.generate_thumbnails()
-            await self._send_event(
-                "THUMBNAILS_READY",
-                pages=[self._thumbnail_to_dict(p) for p in pages],
-            )
-            logger.info(f"PDF inyectado con éxito: {len(pages)} páginas procesadas.")
-            
-        except Exception as exc:
-            logger.error("Error procesando PDF local: %s", exc)
-            await self._send_error(f"Fallo al procesar el PDF cargado: {exc}")
