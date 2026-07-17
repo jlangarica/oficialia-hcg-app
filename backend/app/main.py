@@ -101,7 +101,7 @@ async def serve_raw_pdf(path: str | None = None):
                 "Intento de acceso no autorizado a PDF fuera de storage_dir: %s",
                 pdf_path,
             )
-            return FileResponse(
+            return JSONResponse(
                 status_code=403,
                 content={"error": "Acceso denegado: El PDF solicitado no se encuentra en el directorio de documentos"}
             )
