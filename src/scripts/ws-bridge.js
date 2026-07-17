@@ -13,64 +13,13 @@ let ws = null;
 let reconnectTimer = null;
 let reconnectAttempts = 0;
 
-// Cache de referencias DOM
-const domRef = {
-  statusDot: null,
-  statusText: null,
-  statusBadge: null,
-  _init: function () {
-    if (!this.statusDot) {
-      this.statusDot = $('statusDot');
-      this.statusText = $('statusText');
-      this.statusBadge = $('scannerStatus');
-    }
-  }
-};
 
-function updateHeaderUI() {
-  domRef._init();
-  const { statusDot, statusText, statusBadge } = domRef;
-  if (!statusBadge || !statusDot || !statusText) return;
 
-  statusBadge.classList.remove('ws-connected', 'ws-connecting', 'ws-disconnected');
-
-  switch (AppState.wsStatus) {
-    case 'CONNECTED':
-      statusBadge.classList.add('ws-connected');
-      Object.assign(statusDot.style, {
-        background: 'var(--green)',
-        boxShadow: '0 0 6px rgba(50,215,75,0.4)',
-        animation: 'pulse 2s ease-in-out infinite'
-      });
-      // BLINDAJE ANTI-XSS
-      statusText.innerHTML = '<span style="color:var(--green-text);font-weight:600">Escáner Conectado</span> <span style="font-size:9px;opacity:0.5">NAPS2 Proxy</span>';
-      break;
-
-    case 'CONNECTING':
-      statusBadge.classList.add('ws-connecting');
-      Object.assign(statusDot.style, {
-        background: 'var(--orange)',
-        boxShadow: '0 0 6px rgba(255,159,10,0.4)',
-        animation: 'pulse 1s ease-in-out infinite'
-      });
-      statusText.textContent = 'Buscando Hardware de Escaneo...';
-      break;
-
-    case 'DISCONNECTED':
-    default:
-      statusBadge.classList.add('ws-disconnected');
-      Object.assign(statusDot.style, {
-        background: 'var(--red)',
-        boxShadow: '0 0 6px rgba(255,69,58,0.4)',
-        animation: 'none'
-      });
-      statusText.innerHTML = '<span style="color:var(--red);font-weight:500">Escáner Fuera de Línea</span>';
-      break;
-  }
-}
+// La actualización de indicadores visuales (server badge, hardware badge)
+// la gestiona capture-ui.js mediante los eventos ws:statusChanged y
+// hardware:statusChanged. Aquí solo despachamos los eventos.
 
 function syncConnectionUI() {
-  updateHeaderUI();
   window.dispatchEvent(new CustomEvent('capture:updateUI'));
 }
 
@@ -119,7 +68,6 @@ function connect() {
     ws = new WebSocket(WS_URL);
   } catch (e) {
     AppState.wsStatus = 'DISCONNECTED';
-    syncConnectionUI();
     window.dispatchEvent(new CustomEvent('toast:show', {
       detail: { message: 'Problema al inicializar conexión con agente de hardware.', type: 'error' }
     }));
@@ -131,7 +79,6 @@ function connect() {
     AppState.wsStatus = 'CONNECTED';
     reconnectAttempts = 0;
     cancelReconnect();
-    syncConnectionUI();
     window.dispatchEvent(new CustomEvent('ws:statusChanged', {
       detail: { status: 'CONNECTED' }
     }));
@@ -294,13 +241,7 @@ function sendScannerCommand(command, payload) {
 }
 
 function initWsBridge() {
-  window.addEventListener('preview:confirmStructure', () => {
-    sendScannerCommand('CONFIRM_STRUCTURE', {
-      pages: AppState.pages,
-      duplex: document.getElementById('duplexSwitch')?.checked,
-      dpi: document.getElementById('dpiSelect')?.value
-    });
-  });
+
 
   connect();
 }

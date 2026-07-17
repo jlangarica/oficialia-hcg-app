@@ -46,8 +46,7 @@ function handleConfirmStructure() {
     sent = false;
   }
 
-  // Notificar a ws-bridge para que envíe el comando (si está conectado)
-  window.dispatchEvent(new CustomEvent('preview:confirmStructure'));
+
 
   if (!sent) {
     // En modo demo, avanzar directamente al paso de IA
