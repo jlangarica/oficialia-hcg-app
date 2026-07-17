@@ -112,6 +112,15 @@ function initWizard() {
     goToStep(e.detail.targetStep);
   });
 
+  // Listener para cambio de módulo - pausar actividades si se navega fuera
+  window.addEventListener('module:changed', ({ detail: { to } }) => {
+    if (to !== 'wizard') {
+      // Pausar cualquier escaneo activo si se navega fuera del wizard
+      // En producción: wsBridge.disconnect() o similar si aplica
+      console.log('[Wizard] Navegando fuera, pausando actividades...');
+    }
+  });
+
   // Stepper click navigation
   document.querySelectorAll('.step-dot').forEach(function (dot) {
     dot.addEventListener('click', function () {

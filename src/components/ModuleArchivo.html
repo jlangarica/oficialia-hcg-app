@@ -1,0 +1,116 @@
+<!-- src/components/ModuleArchivo.html -->
+<div class="module-view hidden" id="module-archivo">
+  <!-- Toolbar de búsqueda y filtros -->
+  <div class="archivo-toolbar">
+    <div class="archivo-search-wrapper">
+      <span class="material-symbols-outlined archivo-search-icon">search</span>
+      <input 
+        type="text" 
+        class="archivo-search-input" 
+        id="archivoSearchInput"
+        placeholder="Buscar por folio, remitente o asunto..." 
+        autocomplete="off"
+      />
+    </div>
+    
+    <div class="archivo-filters-row">
+      <div class="archivo-filter-group">
+        <label for="archivoFechaDesde" class="archivo-filter-label">Desde:</label>
+        <input type="date" id="archivoFechaDesde" class="archivo-date-input" />
+      </div>
+      
+      <div class="archivo-filter-group">
+        <label for="archivoFechaHasta" class="archivo-filter-label">Hasta:</label>
+        <input type="date" id="archivoFechaHasta" class="archivo-date-input" />
+      </div>
+      
+      <div class="archivo-filter-group">
+        <label for="archivoEstatus" class="archivo-filter-label">Estatus:</label>
+        <select id="archivoEstatus" class="archivo-select-input">
+          <option value="">Todos</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="revision">En Revisión</option>
+          <option value="procesado">Procesado</option>
+        </select>
+      </div>
+      
+      <button class="archivo-btn-reset" id="archivoResetFilters" title="Limpiar filtros">
+        <span class="material-symbols-outlined">filter_alt_off</span>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Data Grid / Tabla -->
+  <div class="archivo-grid-container">
+    <table class="archivo-grid" id="archivoGrid">
+      <thead>
+        <tr>
+          <th class="archivo-col-folio">Folio</th>
+          <th class="archivo-col-fecha">Fecha</th>
+          <th class="archivo-col-remitente">Remitente</th>
+          <th class="archivo-col-asunto">Asunto</th>
+          <th class="archivo-col-estatus">Estatus</th>
+          <th class="archivo-col-acciones">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="archivoGridBody">
+        <!-- Filas generadas dinámicamente -->
+      </tbody>
+    </table>
+    
+    <!-- Empty state -->
+    <div class="archivo-empty-state hidden" id="archivoEmptyState">
+      <span class="material-symbols-outlined archivo-empty-icon">folder_off</span>
+      <p class="archivo-empty-text">No se encontraron documentos</p>
+      <p class="archivo-empty-subtext">Intenta ajustar los filtros de búsqueda</p>
+    </div>
+  </div>
+  
+  <!-- Paginación -->
+  <div class="archivo-pagination" id="archivoPagination">
+    <span class="archivo-pagination-info" id="archivoPaginationInfo">0 - 0 de 0</span>
+    <div class="archivo-pagination-controls">
+      <button class="archivo-pagination-btn" id="archivoPrevPage" disabled>
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+      <span class="archivo-pagination-pages" id="archivoPaginationPages"></span>
+      <button class="archivo-pagination-btn" id="archivoNextPage" disabled>
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Drawer Slide-over -->
+  <div class="archivo-drawer-overlay hidden" id="archivoDrawerOverlay"></div>
+  <aside class="archivo-drawer" id="archivoDrawer">
+    <div class="archivo-drawer-header">
+      <h3 class="archivo-drawer-title" id="archivoDrawerTitle">Detalle del Documento</h3>
+      <button class="archivo-drawer-close" id="archivoDrawerClose" aria-label="Cerrar panel">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    
+    <div class="archivo-drawer-content">
+      <!-- Visor PDF -->
+      <div class="archivo-pdf-viewer" id="archivoPdfViewer">
+        <iframe id="archivoPdfFrame" src="" frameborder="0"></iframe>
+      </div>
+      
+      <!-- Metadatos -->
+      <div class="archivo-metadata-section">
+        <h4 class="archivo-metadata-title">Metadatos</h4>
+        <dl class="archivo-metadata-list" id="archivoMetadataList">
+          <!-- Metadatos inyectados dinámicamente -->
+        </dl>
+      </div>
+      
+      <!-- AI Diff Viewer (si existe) -->
+      <div class="archivo-diff-section hidden" id="archivoDiffSection">
+        <h4 class="archivo-metadata-title">Correcciones IA</h4>
+        <div class="archivo-diff-viewer" id="archivoDiffViewer">
+          <!-- JSON Diff renderizado aquí -->
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>

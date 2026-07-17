@@ -19,6 +19,9 @@ import '../styles/scan-progress-ring.css';
 import '../styles/page-controls.css';
 import '../styles/responsive.css';
 import '../styles/accessibility.css';
+import '../styles/module-router.css';
+import '../styles/archivo-grid.css';
+import '../styles/archivo-drawer.css';
 
 // ─── Importación de módulos de lógica ───
 import { initWizard, goToStep } from './wizard.js';
@@ -34,6 +37,8 @@ import { initRevealObserver } from './reveal.js';
 import { initWsBridge } from './ws-bridge.js';
 import { initAiProgress } from './ai-progress.js';
 import { initValidatePDFViewer } from './validate-pdf-viewer.js';
+import ModuleRouter from './router.js';
+import './archivo.js';
 
 // ─── Exponer funciones globales requeridas por onclick inline del HTML ───
 window.goToStep = goToStep;
@@ -51,6 +56,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Inicializar sistema de reveal/stagger
   initRevealObserver();
+
+  // Inicializar router de módulos (ANTES que wizard para estado correcto)
+  ModuleRouter.init();
 
   // Inicializar módulos (registra sus Custom Event listeners)
   initWizard();
