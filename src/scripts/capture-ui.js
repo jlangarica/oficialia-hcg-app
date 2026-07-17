@@ -1,6 +1,7 @@
 // src/scripts/capture-ui.js
-import { $ } from './helpers.js';
+import { $, escapeHTML } from './helpers.js';
 import { AppState } from './state.js';
+import { updateScanRing } from './progress-zoom.js';
 
 function updateConnectionIndicators() {
   const serverBadge = $('serverStatusBadge');
@@ -119,7 +120,10 @@ function initCaptureUI() {
     updateCaptureUI();
   });
   window.addEventListener('capture:scanProgress', (e) => {
-    if (e.detail && typeof e.detail.progress === 'number') AppState.scanProgress = e.detail.progress;
+    if (e.detail && typeof e.detail.progress === 'number') {
+      AppState.scanProgress = e.detail.progress;
+      updateScanRing(e.detail.progress);
+    }
     updateCaptureUI();
   });
   window.addEventListener('capture:scanError', (e) => {
