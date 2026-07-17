@@ -13,7 +13,19 @@ let ws = null;
 let reconnectTimer = null;
 let reconnectAttempts = 0;
 
-
+// Cache de referencias DOM corregido con los IDs reales de MainHeader.html
+const domRef = {
+  statusDot: null,
+  statusText: null,
+  statusBadge: null,
+  _init: function () {
+    if (!this.statusDot) {
+      this._statusDot = $('serverStatusDot');
+      this.statusText = $('serverStatusText');
+      this.statusBadge = $('serverStatusBadge');
+    }
+  }
+};
 
 // La actualización de indicadores visuales (server badge, hardware badge)
 // la gestiona capture-ui.js mediante los eventos ws:statusChanged y
@@ -253,6 +265,10 @@ function sendScannerCommand(command, payload) {
 }
 
 function initWsBridge() {
+  // ════════════════════════════════════════════════════════════════
+  // VINCULACIÓN GLOBAL: Permitir que capture-actions.js encuentre la función
+  // ════════════════════════════════════════════════════════════════
+  window.sendScannerCommand = sendScannerCommand;
 
 
   connect();
