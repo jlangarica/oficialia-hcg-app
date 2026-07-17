@@ -90,6 +90,78 @@
   position: relative;
 }
 
+/* === PDF REAL RENDERING === */
+.pdf-pages-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+}
+
+.pdf-page-wrapper {
+  position: relative;
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: white;
+}
+[data-theme="dark"] .pdf-page-wrapper { background: #1d1d1f; }
+
+.pdf-render-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Highlights dinámicos sobre campos extraídos */
+.ai-highlight-dynamic {
+  position: absolute;
+  border: 2px solid var(--orange);
+  background: rgba(255, 159, 10, 0.15);
+  border-radius: 3px;
+  box-shadow: 0 0 20px rgba(255, 159, 10, 0.15);
+  animation: pulse-highlight 2s ease-in-out infinite;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.ai-highlight-dynamic:hover {
+  background: rgba(255, 159, 10, 0.25);
+  border-width: 3px;
+  transform: scale(1.02);
+}
+
+/* Estado de error en carga de PDF */
+.pdf-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px;
+  text-align: center;
+  color: var(--text-2);
+}
+.pdf-error-state .material-symbols-outlined {
+  font-size: 48px;
+  color: var(--orange);
+  font-variation-settings: 'FILL' 1;
+}
+.pdf-error-state p {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+.pdf-error-state small {
+  font-size: 11px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+/* Legacy mock styles (para fallback o modo demo) */
 .doc-page {
   width: 320px;
   background: white;

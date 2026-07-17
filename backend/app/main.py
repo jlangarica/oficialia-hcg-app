@@ -3,9 +3,12 @@
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from app.config import Settings
 from app.handlers.websocket import ScanBridgeHandler
@@ -66,6 +69,71 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="ScanBridge", lifespan=lifespan)
+
+
+@app.get("/api/pdf/raw")
+async def serve_raw_pdf(path: str | None = None):
+    """Sirve el archivo PDF crudo o procesado para visualización en el frontend.
+    
+    Args:
+        path: Ruta opcional del PDF. Si no se proporciona, usa raw_pdf_path por defecto.
+    
+    Returns:
+        FileResponse con el PDF binario.
+    """
+    try:
+        # Determinar qué PDF servir
+        if path:
+            # Decodificar ruta URL-safe
+            from urllib.parse import unquote
+            pdf_path = Path(unquote(path))
+        else:
+            pdf_path = settings.raw_pdf_path
+        
+        # Validar que el archivo existe
+        if not pdf_path.exists():
+            return FileResponse(
+                status_code=404,
+                content={"error": f"PDF no encontrado: {pdf_path}"}
+            )
+        
+        # Validar que es un archivo (no directorio)
+        if not pdf_path.is_file():
+            return FileResponse(
+                status_code=400,
+                content={"error": "La ruta no apunta a un archivo válido"}
+            )
+        
+        # Servir el PDF con tipo MIME correcto
+        return FileResponse(
+            path=str(pdf_path),
+            media_type="application/pdf",
+            filename=pdf_path.name
+        )
+    except Exception as e:
+        logger.error("Error al servir PDF: %s", e)
+        return FileResponse(
+            status_code=500,
+            content={"error": f"Error interno: {str(e)}"}
+        )
+
+
+@app.get("/api/pdf/processed")
+async def serve_processed_pdf():
+    """Sirve el archivo PDF procesado (después de apply_edits)."""
+    pdf_path = settings.processed_pdf_path
+    
+    if not pdf_path.exists():
+        return FileResponse(
+            status_code=404,
+            content={"error": "PDF procesado no encontrado"}
+        )
+    
+    return FileResponse(
+        path=str(pdf_path),
+        media_type="application/pdf",
+        filename=pdf_path.name
+    )
 
 
 @app.websocket("/")
