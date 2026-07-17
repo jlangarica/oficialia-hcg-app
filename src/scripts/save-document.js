@@ -1,4 +1,5 @@
-// save-document.js — Orquesta el guardado real del documento y llena dinámicamente el Paso 5.
+// src/scripts/save-document.js
+// Orquesta el guardado real del documento y llena dinámicamente el Paso 5.
 
 import { $, escapeHTML } from './helpers.js';
 import { AppState } from './state.js';
@@ -39,7 +40,7 @@ function handleSaveDocument() {
   const saveBtn = document.querySelector('#step-4 .glass-btn.primary');
   if (saveBtn) {
     saveBtn.disabled = true;
-    saveBtn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite">sync</span> Guardando...';
+    saveBtn.innerHTML = '&lt;span class="material-symbols-outlined" style="animation:spin 1s linear infinite"&gt;sync&lt;/span&gt; Guardando...';
   }
 
   let sent = false;
@@ -61,7 +62,7 @@ function handleSaveDocument() {
   if (!sent) {
     // Modo demo: generar folio simulado y avanzar
     console.warn('[save-document] WS no disponible — modo demo');
-    setTimeout(() => {
+    setTimeout(() =&gt; {
       const demoFolio = generateDemoFolio();
       const demoResult = {
         folio: demoFolio,
@@ -86,7 +87,7 @@ function onDocumentSaved(result) {
   const saveBtn = document.querySelector('#step-4 .glass-btn.primary');
   if (saveBtn) {
     saveBtn.disabled = false;
-    saveBtn.innerHTML = '<span class="material-symbols-outlined">save</span> Guardar Registro';
+    saveBtn.innerHTML = '&lt;span class="material-symbols-outlined"&gt;save&lt;/span&gt; Guardar Registro';
   }
 
   // Actualizar el Paso 5 con datos reales
@@ -127,10 +128,10 @@ function updateStepSuccess(result) {
   });
 
   // 2. Si hay paginas, mention count
-  if (result.total_paginas > 0) {
+  if (result.total_paginas &gt; 0) {
     items.push({
       icon: 'description',
-      text: `${result.total_paginas} página${result.total_paginas > 1 ? 's' : ''} procesada${result.total_paginas > 1 ? 's' : ''}`,
+      text: `${result.total_paginas} página${result.total_paginas &gt; 1 ? 's' : ''} procesada${result.total_paginas &gt; 1 ? 's' : ''}`,
       done: true,
     });
   }
@@ -144,12 +145,12 @@ function updateStepSuccess(result) {
 
   // Construir HTML con sanitización
   const fragment = document.createDocumentFragment();
-  for (let i = 0; i < items.length; i++) {
+  for (let i = 0; i &lt; items.length; i++) {
     const item = items[i];
     const div = document.createElement('div');
     div.className = 'checklist-item';
-    div.innerHTML = `<span class="material-symbols-outlined">${escapeHTML(item.icon)}</span>` +
-      `<span>${escapeHTML(item.text)}</span>`;
+    div.innerHTML = `&lt;span class="material-symbols-outlined"&gt;${escapeHTML(item.icon)}&lt;/span&gt;` +
+      `&lt;span&gt;${escapeHTML(item.text)}&lt;/span&gt;`;
     fragment.appendChild(div);
   }
 
@@ -169,7 +170,7 @@ function generateDemoFolio() {
 
 function initSaveDocument() {
   // Escuchar el evento DOCUMENT_SAVED que llega desde ws-bridge.js
-  window.addEventListener('ws:documentSaved', (e) => {
+  window.addEventListener('ws:documentSaved', (e) =&gt; {
     const detail = e.detail || {};
     onDocumentSaved({
       folio: detail.folio,
