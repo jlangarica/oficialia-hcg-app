@@ -218,6 +218,12 @@ const agentEventHandlers = {
     }));
   },
 
+  'METADATA_READY': function (msg) {
+    window.dispatchEvent(new CustomEvent('ws:metadataReady', {
+      detail: { metadata: msg.metadata }
+    }));
+  },
+
   'scan-complete': function () {
     window.dispatchEvent(new CustomEvent('wizard:navigate', {
       detail: { targetStep: 2 }

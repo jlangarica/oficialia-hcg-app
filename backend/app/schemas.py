@@ -37,9 +37,14 @@ class LoadLocalPdfCommand(BaseModel):
     base64_data: str
 
 
+class ExtractMetadataCommand(BaseModel):
+    """Comando para iniciar la extracción inteligente de metadatos vía Gemini."""
+    command: Literal["EXTRACT_METADATA"]
+
+
 # Tipo unión de todos los comandos reconocidos
 Command = Annotated[
-    StartScanCommand | ApplyEditsCommand | LoadLocalPdfCommand,
+    StartScanCommand | ApplyEditsCommand | LoadLocalPdfCommand | ExtractMetadataCommand,
     Field(discriminator="command"),
 ]
 
