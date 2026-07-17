@@ -81,7 +81,7 @@ class Settings:
 
     # Red
     host: str = os.getenv("SCANBRIDGE_HOST", "127.0.0.1")
-    port: int = _env_int("SCANBRIDGE_PORT", 8000)
+    port: int = _env_int("SCANBRIDGE_PORT", 8001)
 
     # Timeout de escaneo
     scan_timeout: int = _env_int("SCANBRIDGE_SCAN_TIMEOUT", 300)
