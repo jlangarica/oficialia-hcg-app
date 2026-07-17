@@ -1,45 +1,32 @@
-"""Modelos Pydantic para validación de mensajes del WebSocket."""
+"""Esquemas de validación de datos usando Pydantic."""
 
-from __future__ import annotations
+from typing import Annotated, Literal
 
-from typing import Annotated, Any, Literal
-
-from pydantic import BaseModel, Field, model_validator, TypeAdapter
+from pydantic import BaseModel, Field
 
 
 class StartScanCommand(BaseModel):
-    """Comando para iniciar un escaneo."""
+    """Comando para iniciar el escaneo de documentos."""
 
     command: Literal["START_SCAN"]
+    dpi: int = Field(ge=72, le=600, default=300)
+    color_mode: Literal["Color", "Grayscale", "BlackWhite"] = "Color"
     duplex: bool = False
-    resolution: int | None = Field(
-        default=None, ge=50, le=1200, description="DPI entre 50 y 1200"
-    )
-
-
-class EditOperationSchema(BaseModel):
-    """Operación individual de edición."""
-
-    source_index: int = Field(ge=0)
-    rotation: int
 
 
 class ApplyEditsCommand(BaseModel):
-    """Comando para aplicar ediciones a un PDF escaneado."""
+    """Comando para aplicar ediciones de metadatos al PDF."""
 
     command: Literal["APPLY_EDITS"]
-    operations: list[EditOperationSchema] = Field(min_length=1)
+    metadata: dict[str, str]
+    # Se pueden agregar campos específicos si se requiere validación estricta
 
 
 class LoadLocalPdfCommand(BaseModel):
-    """◄ NUEVO: Validador estructural para carga de archivos locales"""
+    """Comando para cargar un PDF local existente."""
+
     command: Literal["LOAD_LOCAL_PDF"]
-    base64_data: str
-
-
-class ExtractMetadataCommand(BaseModel):
-    """Comando para iniciar la extracción inteligente de metadatos vía Gemini."""
-    command: Literal["EXTRACT_METADATA"]
+    file_path: str
 
 
 class SaveDocumentCommand(BaseModel):
@@ -57,17 +44,11 @@ class SaveDocumentCommand(BaseModel):
     ai_diff: dict | None = None
 
 
-# Tipo unión de todos los comandos reconocidos
+# Tipo unión ACTUALIZADO — agregar SaveDocumentCommand
 Command = Annotated[
     StartScanCommand
     | ApplyEditsCommand
     | LoadLocalPdfCommand
-    | ExtractMetadataCommand
     | SaveDocumentCommand,
     Field(discriminator="command"),
 ]
-
-# ════════════════════════════════════════════════════════════════
-# ADAPTADOR DE UNIÓN: Resuelve el tipado estricto en Python 3.14
-# ════════════════════════════════════════════════════════════════
-CommandAdapter: TypeAdapter[Command] = TypeAdapter(Command)
