@@ -32,6 +32,7 @@ import { initPreviewConfirm, handleConfirmStructure, handleReScan } from './prev
 import { toggleTheme, initTheme } from './theme.js';
 import { initRevealObserver } from './reveal.js';
 import { initWsBridge } from './ws-bridge.js';
+import { initAiProgress } from './ai-progress.js';
 
 // ─── Exponer funciones globales requeridas por onclick inline del HTML ───
 window.goToStep = goToStep;
@@ -58,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initPreviewGrid();
   initPreviewActions();
   initPreviewConfirm();
+  initAiProgress();
 
   // Conectar al agente local de escáner (último para que los demás módulos tengan sus listeners listos)
   initWsBridge();
