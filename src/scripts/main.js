@@ -1,80 +1,32 @@
-// main.js — Entry point: importa estilos y orquesta la inicialización
+/ src/scripts/main.js
+/**
+ * Punto de entrada principal del frontend.
+ * Inicializa módulos y expone APIs globales necesarias para HTML inline.
+ */
 
-// ─── Importación de CSS (orden importa: tokens primero) ───
-import '../styles/tokens.css';
-import '../styles/base.css';
-import '../styles/ambient.css';
-import '../styles/app-window.css';
-import '../styles/sidebar.css';
-import '../styles/main-header.css';
-import '../styles/glass-card.css';
-import '../styles/step-capture.css';
-import '../styles/step-preview.css';
-import '../styles/step-ai.css';
-import '../styles/step-validate.css';
-import '../styles/step-success.css';
-import '../styles/stagger.css';
-import '../styles/toast.css';
-import '../styles/scan-progress-ring.css';
-import '../styles/page-controls.css';
-import '../styles/responsive.css';
-import '../styles/accessibility.css';
-import '../styles/module-router.css';
-import '../styles/archivo-grid.css';
-import '../styles/archivo-drawer.css';
-
-// ─── Importación de módulos de lógica ───
+import { initCapture } from './capture.js';
+import { initPreviewConfirm } from './preview-confirm.js';
 import { initWizard, goToStep, resetWizard } from './wizard.js';
-import { initToast } from './toast.js';
-import { adjustZoom } from './progress-zoom.js';
-import { initCaptureUI } from './capture-ui.js';
-import { initCaptureActions, handleStartScan, handleFileInject } from './capture-actions.js';
-import { initPreviewGrid } from './preview-grid.js';
-import { initPreviewActions } from './preview-actions.js';
-import { initPreviewConfirm, handleConfirmStructure, handleReScan } from './preview-confirm.js';
-import { toggleTheme, initTheme } from './theme.js';
-import { initRevealObserver } from './reveal.js';
 import { initWsBridge } from './ws-bridge.js';
-import { initAiProgress } from './ai-progress.js';
-import { initValidatePDFViewer } from './validate-pdf-viewer.js';
 import { initSaveDocument, handleSaveDocument } from './save-document.js';
-import ModuleRouter from './router.js';
-import './archivo.js';
+import { initToast } from './toast.js';
 
-// ─── Exponer funciones globales requeridas por onclick inline del HTML ───
-window.goToStep = goToStep;
-window.resetWizard = resetWizard;
-window.toggleTheme = toggleTheme;
-window.handleStartScan = handleStartScan;
-window.handleFileInject = handleFileInject;
-window.handleConfirmStructure = handleConfirmStructure;
-window.handleReScan = handleReScan;
-window.adjustZoom = adjustZoom;
-window.handleSaveDocument = handleSaveDocument;
+document.addEventListener('DOMContentLoaded', () =&gt; {
+  console.log('🚀 Inicializando Oficialía Digital...');
 
-// ─── Inicialización de la aplicación ───
-document.addEventListener('DOMContentLoaded', () => {
-  // Restaurar tema persistido
-  initTheme();
-
-  // Inicializar sistema de reveal/stagger
-  initRevealObserver();
-
-  // Inicializar router de módulos (ANTES que wizard para estado correcto)
-  ModuleRouter.init();
-
-  // Inicializar módulos (registra sus Custom Event listeners)
-  initWizard();
+  // Inicializar módulos base
   initToast();
-  initCaptureUI();
-  initCaptureActions();
-  initPreviewGrid();
-  initPreviewActions();
-  initPreviewConfirm();
-  initAiProgress();
-  initValidatePDFViewer();
-  initSaveDocument();
-
-  // Conectar al agente local de escáner (último para que los demás módulos tengan sus listeners listos)
   initWsBridge();
+  initCapture();
+  initPreviewConfirm();
+  initSaveDocument();
+  initWizard();
+
+  // Exponer funciones globales para handlers inline en HTML
+  window.goToStep = goToStep;
+  window.resetWizard = resetWizard;
+  window.handleSaveDocument = handleSaveDocument;
+  
+  // Exposición existente para re-escaneo desde botones inline
+  window.handleReScan = () =&gt; resetWizard(); 
 });
