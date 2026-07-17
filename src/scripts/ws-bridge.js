@@ -224,6 +224,21 @@ const agentEventHandlers = {
     }));
   },
 
+  'DOCUMENT_SAVED': function (msg) {
+    AppState.isSaving = false;
+    console.log('[WS] Documento guardado. Folio:', msg.folio);
+
+    // Reenviar como evento interno para que save-document.js lo reciba
+    window.dispatchEvent(new CustomEvent('ws:documentSaved', {
+      detail: {
+        folio: msg.folio || '',
+        pdf_path: msg.pdf_path || '',
+        estatus: msg.estatus || 'procesado',
+        total_paginas: msg.total_paginas || 0,
+      }
+    }));
+  },
+
   'scan-complete': function () {
     window.dispatchEvent(new CustomEvent('wizard:navigate', {
       detail: { targetStep: 2 }

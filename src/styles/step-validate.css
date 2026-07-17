@@ -372,6 +372,11 @@ textarea.apple-input { resize: none; min-height: 80px; line-height: 1.55; }
   80% { transform: translate3d(2px, 0, 0); }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;

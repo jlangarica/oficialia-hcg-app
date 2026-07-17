@@ -24,7 +24,7 @@ import '../styles/archivo-grid.css';
 import '../styles/archivo-drawer.css';
 
 // ─── Importación de módulos de lógica ───
-import { initWizard, goToStep } from './wizard.js';
+import { initWizard, goToStep, resetWizard } from './wizard.js';
 import { initToast } from './toast.js';
 import { adjustZoom } from './progress-zoom.js';
 import { initCaptureUI } from './capture-ui.js';
@@ -37,17 +37,20 @@ import { initRevealObserver } from './reveal.js';
 import { initWsBridge } from './ws-bridge.js';
 import { initAiProgress } from './ai-progress.js';
 import { initValidatePDFViewer } from './validate-pdf-viewer.js';
+import { initSaveDocument, handleSaveDocument } from './save-document.js';
 import ModuleRouter from './router.js';
 import './archivo.js';
 
 // ─── Exponer funciones globales requeridas por onclick inline del HTML ───
 window.goToStep = goToStep;
+window.resetWizard = resetWizard;
 window.toggleTheme = toggleTheme;
 window.handleStartScan = handleStartScan;
 window.handleFileInject = handleFileInject;
 window.handleConfirmStructure = handleConfirmStructure;
 window.handleReScan = handleReScan;
 window.adjustZoom = adjustZoom;
+window.handleSaveDocument = handleSaveDocument;
 
 // ─── Inicialización de la aplicación ───
 document.addEventListener('DOMContentLoaded', () => {
@@ -70,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initPreviewConfirm();
   initAiProgress();
   initValidatePDFViewer();
+  initSaveDocument();
 
   // Conectar al agente local de escáner (último para que los demás módulos tengan sus listeners listos)
   initWsBridge();
