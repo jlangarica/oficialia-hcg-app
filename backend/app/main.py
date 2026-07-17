@@ -94,6 +94,18 @@ async def serve_raw_pdf(path: str | None = None):
         else:
             pdf_path = settings.raw_pdf_path
         
+        # Validar que el PDF solicitado está dentro del directorio de almacenamiento seguro
+        doc_service: DocumentService = app.state.document_service
+        if not pdf_path.resolve().is_relative_to(doc_service._storage_dir.resolve()):
+            logger.warning(
+                "Intento de acceso no autorizado a PDF fuera de storage_dir: %s",
+                pdf_path,
+            )
+            return FileResponse(
+                status_code=403,
+                content={"error": "Acceso denegado: El PDF solicitado no se encuentra en el directorio de documentos"}
+            )
+        
         # Validar que el archivo existe
         if not pdf_path.exists():
             return FileResponse(
