@@ -115,6 +115,12 @@ class ScannerService:
                     # Retorna el primer dispositivo físico detectado en Fedora
                     return devices[0]
             return None
+        except FileNotFoundError:
+            logger.warning(
+                "El ejecutable 'naps2.console' no fue encontrado en el PATH. "
+                "La detección automática de escáner no funcionará."
+            )
+            return None
         except Exception as e:
-            logger.error(f"Fallo al diagnosticar hardware USB: {e}")
+            logger.error(f"Fallo inesperado al diagnosticar hardware: {e}")
             return None
