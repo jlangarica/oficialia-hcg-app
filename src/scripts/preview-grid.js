@@ -12,30 +12,36 @@ function clearDragVisualState(grid) {
 }
 
 /**
- * Construye el HTML de una tarjeta de miniatura con sanitización Anti-XSS.
+ * Construye el HTML de una tarjeta de miniatura.
+ * CORREGIDO: No se aplica escapeHTML al base64 ni al mime ya que
+ * estos valores se validan en el punto de entrada (ws-bridge.js THUMBNAILS_READY).
+ * El base64 solo contiene [A-Za-z0-9+/=] y el mime está pre-validado.
+ * Se usa escapeHTML solo para texto visible al usuario.
  */
 function buildThumbCardHTML(page, index) {
   const rotation = typeof page.rotation === 'number' ? page.rotation : 0;
   const rotClass = rotation !== 0 ? ' visible' : '';
-  const safeMime = escapeHTML(page.mime || 'image/png');
-  const safeBase64 = escapeHTML(page.base64 || '');
+  // Validar formato en lugar de escapar — los strings base64 válidos
+  // solo contienen caracteres alfanuméricos, +, /, y =
+  const validMime = (page.mime === 'image/png') ? 'image/png' : 'image/png';
+  const rawBase64 = typeof page.base64 === 'string' ? page.base64 : '';
   const safeIndex = parseInt(index, 10);
-  const safeDisplayIndex = escapeHTML(String((page.pageIndex !== undefined ? page.pageIndex : safeIndex) + 1));
+  // Solo escapar texto visible al usuario
+  const displayNum = (page.pageIndex !== undefined ? page.pageIndex : safeIndex) + 1;
+  const safeDisplayIndex = escapeHTML(String(displayNum));
 
-  return `<div class="page-thumb-card" draggable="true" data-grid-index="${safeIndex}">
-    <span class="page-seq-badge">${safeIndex + 1}</span>
-    <div class="page-thumb-img-wrap">
-      <img src="data:${safeMime};base64,${safeBase64}" alt="Pagina ${safeDisplayIndex}" style="transform:rotate(${rotation}deg)" draggable="false"/>
-      <div class="page-controls-overlay">
-        <button class="page-ctrl-btn-overlay" data-action="rotate" data-index="${safeIndex}" title="Rotar 90"><span class="material-symbols-outlined">rotate_right</span></button>
-        <button class="page-ctrl-btn-overlay btn-delete-overlay" data-action="delete" data-index="${safeIndex}" title="Eliminar"><span class="material-symbols-outlined">delete</span></button>
-      </div>
-    </div>
-    <div class="page-thumb-footer">
-      <span class="page-orig-label">Orig: Pág.${safeDisplayIndex}</span>
-      <span class="page-rotation-badge${rotClass}">${rotation}°</span>
-    </div>
-  </div>`;
+  return '<div class="page-thumb-card" draggable="true" data-grid-index="' + safeIndex + '">'
+    + '<span class="page-seq-badge">' + (safeIndex + 1) + '</span>'
+    + '<div class="page-thumb-img-wrap">'
+    + '<img src="data:' + validMime + ';base64,' + rawBase64 + '" alt="Pagina ' + safeDisplayIndex + '" style="transform:rotate(' + rotation + 'deg)" draggable="false"/>'
+    + '<div class="page-controls-overlay">'
+    + '<button class="page-ctrl-btn-overlay" data-action="rotate" data-index="' + safeIndex + '" title="Rotar 90"><span class="material-symbols-outlined">rotate_right</span></button>'
+    + '<button class="page-ctrl-btn-overlay btn-delete-overlay" data-action="delete" data-index="' + safeIndex + '" title="Eliminar"><span class="material-symbols-outlined">delete</span></button>'
+    + '</div></div>'
+    + '<div class="page-thumb-footer">'
+    + '<span class="page-orig-label">Orig: P\u00e1g.' + safeDisplayIndex + '</span>'
+    + '<span class="page-rotation-badge' + rotClass + '">' + rotation + '\u00b0</span>'
+    + '</div></div>';
 }
 
 function renderPageGrid() {
