@@ -96,31 +96,48 @@ class ScannerService:
 
     async def detect_hardware_scanner(self) -> str | None:
         """Ejecuta NAPS2 para listar dispositivos USB/Red conectados.
+
         Retorna el nombre del primer escáner real encontrado o None.
+        Maneja de forma segura la ausencia del ejecutable.
         """
         cmd = ["naps2.console", "--list-devices"]
+        process: asyncio.subprocess.Process | None = None
         try:
             process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
-            stdout, _stderr = await asyncio.wait_for(process.communicate(), timeout=10)
-            
+            stdout, _stderr = await asyncio.wait_for(
+                process.communicate(), timeout=10
+            )
+
             if process.returncode == 0 and stdout:
                 lines = stdout.decode().strip().split('\n')
-                # Filtrar líneas vacías o de carga de NAPS2
-                devices = [line.strip() for line in lines if line.strip() and not line.startswith("---")]
+                devices = [
+                    line.strip()
+                    for line in lines
+                    if line.strip() and not line.startswith("---")
+                ]
                 if devices:
-                    # Retorna el primer dispositivo físico detectado en Fedora
                     return devices[0]
             return None
         except FileNotFoundError:
             logger.warning(
-                "El ejecutable 'naps2.console' no fue encontrado en el PATH. "
-                "La detección automática de escáner no funcionará."
+                "El ejecutable 'naps2.console' no fue encontrado. "
+                "La detección de escáner está deshabilitada."
             )
             return None
+        except asyncio.TimeoutError:
+            logger.warning(
+                "Timeout al buscar escáneres con 'naps2.console'."
+            )
+            if process is not None and process.returncode is None:
+                process.kill()
+                await process.wait()
+            return None
         except Exception as e:
-            logger.error(f"Fallo inesperado al diagnosticar hardware: {e}")
+            logger.error(
+                "Fallo inesperado al diagnosticar hardware: %s", e
+            )
             return None
