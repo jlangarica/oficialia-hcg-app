@@ -42,3 +42,8 @@ Command = Annotated[
     StartScanCommand | ApplyEditsCommand | LoadLocalPdfCommand,
     Field(discriminator="command"),
 ]
+
+# ════════════════════════════════════════════════════════════════
+# ADAPTADOR DE UNIÓN: Resuelve el tipado estricto en Python 3.14
+# ════════════════════════════════════════════════════════════════
+CommandAdapter: TypeAdapter[Command] = TypeAdapter(Command)
