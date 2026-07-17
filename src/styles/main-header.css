@@ -25,15 +25,32 @@
   transition: all 0.4s var(--spring-bounce);
 }
 .status-dot {
-  width: 6px; height: 6px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
+  background: var(--red);
+  box-shadow: none;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+.status-dot.is-online {
   background: var(--green);
   box-shadow: 0 0 6px rgba(50, 215, 75, 0.4);
-  animation: pulse-dot 2s ease-in-out infinite;
+  animation: pulse-dot-online 2s ease-in-out infinite;
 }
-@keyframes pulse-dot {
+.status-dot.is-connecting {
+  background: var(--orange);
+  box-shadow: 0 0 6px rgba(255, 159, 10, 0.4);
+  animation: pulse-dot-connecting 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot-online {
   0%, 100% { box-shadow: 0 0 6px rgba(50, 215, 75, 0.4); }
   50% { box-shadow: 0 0 12px rgba(50, 215, 75, 0.7); }
+}
+
+@keyframes pulse-dot-connecting {
+  0%, 100% { box-shadow: 0 0 6px rgba(255, 159, 10, 0.4); }
+  50% { box-shadow: 0 0 12px rgba(255, 159, 10, 0.7); }
 }
 .status-text {
   font-size: 10px;

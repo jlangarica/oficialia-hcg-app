@@ -163,8 +163,13 @@ function initWizard() {
       toggleSidebar();
       return;
     }
-    if (e.key === 'ArrowRight' && currentStep < 5) goToStep(currentStep + 1);
-    if (e.key === 'ArrowLeft' && currentStep > 1) goToStep(currentStep - 1);
+    // CORREGIDO: Las flechas solo permiten retroceder (igual que el click en stepper).
+    // Para avanzar, el usuario debe usar los botones de acción de cada paso.
+    if (e.key === 'ArrowLeft' && currentStep > 1) {
+      goToStep(currentStep - 1);
+    }
+    // CORREGIDO: ArrowRight no avanza automáticamente — requiere interacción deliberada
+    // con los botones de acción (Confirmar Estructura, Guardar Registro, etc.)
   });
 }
 
