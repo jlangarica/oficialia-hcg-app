@@ -10,7 +10,6 @@ import shutil
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from sqlite3 import Connection, Row, connect as sqlite_connect
 
 from app.config import Settings
 from app.exceptions import PDFProcessingError
@@ -28,9 +27,9 @@ class DocumentService:
         self._storage_dir.mkdir(parents=True, exist_ok=True)
         self._init_db()
 
-    def _get_conn(self) -> Connection:
+    def _get_conn(self) -> sqlite3.Connection:
         """Devuelve una conexión SQLite con row_factory."""
-        conn = sqlite_connect(str(self._db_path))
+        conn = sqlite3.connect(str(self._db_path))
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
