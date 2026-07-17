@@ -1,7 +1,8 @@
-"""Servicio de escaneo usando NAPS2 CLI, con soporte multiplataforma y exclusión mutua."""
+"""Servicio de escaneo usando NAPS2 CLI y SANE nativo, con soporte multiplataforma y exclusión mutua."""
 
 import asyncio
 import logging
+import os
 import platform
 import shlex
 from typing import Optional
@@ -14,12 +15,12 @@ logger = logging.getLogger(__name__)
 
 
 class ScannerService:
-    """Encapsula la interacción con el CLI de NAPS2 con exclusión mutua de hardware."""
+    """Encapsula la interacción con el hardware de escaneo protegiendo el bus de datos."""
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
-        # Lock para evitar que peticiones concurrentes colisionen en el bus USB/SANE
-        self._lock = asyncio.open() if hasattr(asyncio, "open") else asyncio.Lock()
+        # Lock centralizado para evitar colisiones en el bus físico USB/SANE
+        self._lock = asyncio.Lock()
 
     @property
     def settings(self) -> Settings:
@@ -28,14 +29,14 @@ class ScannerService:
     async def scan(
         self, duplex: bool = False, resolution: int | None = None
     ) -> ScanResult:
-        """Ejecuta un escaneo físico protegiendo el bus de hardware via Lock."""
+        """Ejecuta un escaneo físico forzando el modo oculto y headless en Linux."""
         async with self._lock:
             cmd = [
                 self._settings.scanner_binary,
                 "-o", str(self._settings.raw_pdf_path),
                 "-p", self._settings.scanner_profile,
                 "--force",
-                "--hide-progress",  # ◄ NUEVO: Fuerza a NAPS2 a ejecutarse 100% en segundo plano
+                "--hide-progress",
             ]
             if duplex:
                 cmd.append("--duplex")
@@ -44,12 +45,21 @@ class ScannerService:
 
             logger.debug("Comando a ejecutar: %s", shlex.join(cmd))
 
+            # ════════════════════════════════════════════════════════════
+            # AISLAMIENTO GRÁFICO: Forzar entorno headless en Linux
+            # ════════════════════════════════════════════════════════════
+            sub_env = os.environ.copy()
+            if platform.system() == "Linux":
+                sub_env.pop("DISPLAY", None)
+                sub_env.pop("WAYLAND_DISPLAY", None)
+
             process: Optional[asyncio.subprocess.Process] = None
             try:
                 process = await asyncio.create_subprocess_exec(
                     *cmd,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
+                    env=sub_env,  # Inyectar entorno sin pantalla
                 )
                 stdout, stderr = await asyncio.wait_for(
                     process.communicate(),
@@ -79,9 +89,17 @@ class ScannerService:
             )
 
     async def detect_hardware_scanner(self) -> str | None:
-        """Lista los dispositivos garantizando acceso exclusivo al bus de diagnóstico."""
+        """Lista los dispositivos evitando popups gráficos mediante herramientas nativas."""
         async with self._lock:
-            cmd = [self._settings.scanner_binary, "--list-devices"]
+            system = platform.system()
+            
+            # En Linux, NAPS2 inicializa la interfaz gráfica antes de procesar los argumentos.
+            # Usamos 'scanimage -L' que consulta directamente a SANE de forma invisible en la terminal.
+            if system == "Linux":
+                cmd = ["scanimage", "-L"]
+            else:
+                cmd = [self._settings.scanner_binary, "--list-devices"]
+
             process: Optional[asyncio.subprocess.Process] = None
             try:
                 process = await asyncio.create_subprocess_exec(
@@ -89,22 +107,33 @@ class ScannerService:
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                 )
-                stdout, _ = await asyncio.wait_for(process.communicate(), timeout=10)
+                stdout, _ = await asyncio.wait_for(process.communicate(), timeout=5)
 
                 if process.returncode == 0 and stdout:
-                    lines = stdout.decode().strip().splitlines()
-                    devices = [
-                        line.strip()
-                        for line in lines
-                        if line.strip() and not line.startswith("---")
-                    ]
-                    if devices:
-                        logger.info("Dispositivos detectados: %s", devices)
-                        return devices[0]
+                    decoded = stdout.decode().strip()
+                    if system == "Linux":
+                        # Parsear formato de scanimage: device `backend:dev' is a...
+                        lines = decoded.splitlines()
+                        devices = [
+                            line.split("`")[1].split("'")[0]
+                            for line in lines
+                            if "`" in line and "'" in line
+                        ]
+                        if devices:
+                            logger.info("Escáner físico SANE detectado: %s", devices[0])
+                            return devices[0]
+                    else:
+                        lines = decoded.splitlines()
+                        devices = [
+                            line.strip()
+                            for line in lines
+                            if line.strip() and not line.startswith("---")
+                        ]
+                        if devices:
+                            return devices[0]
                 return None
             except asyncio.TimeoutError:
-                # Integrado: Limpieza forzada y retorno seguro sin propagar excepción
-                logger.warning("Timeout detectando hardware (NAPS2 bloqueado). Limpiando proceso zombie...")
+                logger.warning("Timeout detectando hardware. Limpiando subproceso...")
                 if process and process.returncode is None:
                     try:
                         process.kill()
@@ -113,7 +142,8 @@ class ScannerService:
                         pass
                 return None
             except FileNotFoundError:
-                logger.warning("Binario NAPS2 no encontrado durante diagnóstico.")
+                if system == "Linux":
+                    logger.warning("scanimage no encontrado, revisa los paquetes de SANE.")
                 return None
             except Exception:
                 logger.exception("Error al detectar hardware de escáner.")
