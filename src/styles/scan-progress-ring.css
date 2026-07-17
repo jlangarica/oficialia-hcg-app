@@ -1,0 +1,7 @@
+/* === SCAN PROGRESS RING === */
+.scan-progress-ring { position: relative; z-index: 1; width: 72px; height: 72px; }
+.scan-progress-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.scan-progress-ring circle { fill: none; stroke-width: 3; stroke-linecap: round; }
+.scan-progress-ring .ring-bg { stroke: rgba(50, 215, 75, 0.15); }
+.scan-progress-ring .ring-fg { stroke: var(--green); stroke-dasharray: 201; stroke-dashoffset: 201; transition: stroke-dashoffset 0.3s ease; filter: drop-shadow(0 0 8px rgba(50, 215, 75, 0.4)); }
+.scan-progress-ring .scan-progress-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: var(--text-1); }

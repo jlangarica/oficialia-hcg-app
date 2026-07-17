@@ -1,0 +1,32 @@
+/* === RESPONSIVE === */
+@media (max-width: 1200px) {
+  .doc-grid { grid-template-columns: repeat(2, 1fr); }
+  .form-panel { width: 340px; }
+}
+
+@media (max-width: 1000px) {
+  .app-window {
+    grid-template-columns: 1fr;
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+  .sidebar { display: none; }
+  .validate-layout { flex-direction: column; }
+  .pdf-viewer { flex: none; height: 45%; border-right: none; border-bottom: 0.5px solid var(--separator); }
+  .form-panel { width: 100%; flex: 1; }
+  .main-header { padding: 0 16px 0 16px; }
+  .stepper { display: none; }
+  .preview-toolbar { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .preview-toolbar-right { width: 100%; justify-content: flex-start; }
+  .page-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+}
+
+@media (max-width: 600px) {
+  .capture-card { padding: 32px 24px; }
+  .capture-card h1 { font-size: 24px; }
+  .scan-options { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .page-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .form-panel { padding: 16px 20px; }
+  .success-card { padding: 36px 24px; }
+}

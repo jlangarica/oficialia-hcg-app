@@ -1,0 +1,36 @@
+<!-- STEP 3: AI EXTRACTION -->
+<section class="step-view" id="step-3">
+  <div class="ai-section" data-stagger>
+    <div class="ai-core-wrapper">
+      <div class="orbit-ring"></div>
+      <div class="orbit-ring orbit-ring-2"></div>
+      <div class="ai-core">
+        <div class="ai-core-icon">
+          <span class="material-symbols-outlined">smart_toy</span>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="ai-title">Procesando Documento</h2>
+    <p class="ai-subtitle">Clasificando documento, extrayendo metadatos y validando firmas automáticamente.</p>
+
+    <div class="skeleton-group">
+      <div class="skeleton-line" style="width:75%"></div>
+      <div class="skeleton-block"></div>
+      <div class="skeleton-line" style="width:50%"></div>
+      <div class="skeleton-block"></div>
+    </div>
+
+    <div class="ai-progress">
+      <div class="ai-progress-label">
+        <span>Extrayendo</span>
+        <span id="aiProgressPct">0%</span>
+      </div>
+      <div class="ai-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-labelledby="aiProgressPct">
+        <div class="ai-progress-fill" id="aiProgressFill" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <button class="skip-link" onclick="goToStep(4)">Omitir espera (Dev)</button>
+  </div>
+</section>

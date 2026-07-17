@@ -1,0 +1,110 @@
+<!-- STEP 4: VALIDATE -->
+<section class="step-view" id="step-4" style="align-items:stretch;justify-content:stretch;padding:0">
+  <div class="validate-layout">
+    <div class="pdf-viewer">
+      <div class="pdf-toolbar">
+        <span class="pdf-filename">
+          <span class="material-symbols-outlined">draft</span>
+          Documento_Escaneado_Final.pdf
+        </span>
+        <div class="zoom-controls">
+          <button onclick="adjustZoom(-10)" aria-label="Alejar"><span class="material-symbols-outlined">remove</span></button>
+          <span class="zoom-value" id="zoomValue">100%</span>
+          <button onclick="adjustZoom(10)" aria-label="Acercar"><span class="material-symbols-outlined">add</span></button>
+        </div>
+      </div>
+      <div class="pdf-canvas">
+        <div class="doc-page" id="docPreview" style="transform-origin: top center;">
+          <div class="pg-line header"></div>
+          <div class="pg-line short"></div>
+          <div class="pg-line medium"></div>
+          <div class="pg-line long"></div>
+          <div class="pg-line long"></div>
+          <div class="pg-line medium"></div>
+          <div class="pg-line long"></div>
+          <div class="pg-line short"></div>
+          <div class="pg-line medium"></div>
+          <div class="pg-line long"></div>
+          <div class="pg-line long"></div>
+          <div class="pg-line medium"></div>
+          <div class="pg-line signature"></div>
+          <div class="ai-highlight"></div>
+        </div>
+        <div class="ai-note">
+          <span class="material-symbols-outlined">warning</span>
+          <span>Validación requerida</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-panel">
+      <div class="form-header" data-stagger>
+        <div>
+          <h3>Validación de Metadatos</h3>
+          <p class="sub">Revise los campos extraídos antes de guardar.</p>
+        </div>
+        <div class="confidence-badge">
+          <span class="material-symbols-outlined">check_circle</span>
+          <span>Confianza: 96%</span>
+        </div>
+      </div>
+
+      <div class="form-fields">
+        <div class="field-group" data-stagger>
+          <label class="field-label" for="classSelect">
+            Clasificación Documental
+            <span class="ai-mark"><span class="material-symbols-outlined">auto_awesome</span>IA</span>
+          </label>
+          <select class="apple-input" id="classSelect">
+            <option>Oficio Externo</option>
+            <option>Circular Interna</option>
+            <option>Factura</option>
+          </select>
+        </div>
+
+        <div class="field-group" data-stagger>
+          <label class="field-label" for="folioInput">
+            Número de Folio
+            <span class="ai-mark"><span class="material-symbols-outlined">auto_awesome</span>IA</span>
+          </label>
+          <div class="input-wrap">
+            <span class="material-symbols-outlined ai-sparkle">auto_awesome</span>
+            <input type="text" class="apple-input has-icon" id="folioInput" value="OF-2026-00042" readonly style="color:var(--blue);font-weight:600">
+          </div>
+        </div>
+
+        <div class="field-group" data-stagger>
+          <label class="field-label" for="shake-input">
+            Remitente
+            <span class="warn" id="shake-warn"><span class="material-symbols-outlined">info</span>Baja Confianza</span>
+          </label>
+          <input type="text" class="apple-input warning" id="shake-input" value="Lic. Juan P*rez M." aria-invalid="true" aria-describedby="shake-warn">
+        </div>
+
+        <div class="field-group" data-stagger>
+          <label class="field-label" for="fechaInput">Fecha del Documento</label>
+          <input type="date" class="apple-input" id="fechaInput" value="2026-10-15">
+        </div>
+
+        <div class="field-group" data-stagger>
+          <label class="field-label" for="asuntoInput">
+            Asunto Resumido
+            <span class="ai-mark"><span class="material-symbols-outlined">auto_awesome</span>Generado</span>
+          </label>
+          <textarea class="apple-input" id="asuntoInput">Solicitud de revisión de expedientes fiscales correspondientes al tercer trimestre del año en curso, para auditoría interna.</textarea>
+        </div>
+      </div>
+
+      <div class="form-actions" data-stagger>
+        <button class="glass-btn" onclick="goToStep(2)">
+          <span class="material-symbols-outlined">arrow_back</span>
+          Atrás
+        </button>
+        <button class="glass-btn primary" onclick="goToStep(5)">
+          <span class="material-symbols-outlined">save</span>
+          Guardar Registro
+        </button>
+      </div>
+    </div>
+  </div>
+</section>

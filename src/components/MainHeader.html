@@ -1,0 +1,41 @@
+<!-- Header -->
+<header class="main-header">
+  
+  <!-- Contenedor de estados divididos -->
+  <div style="display: flex; gap: 12px; align-items: center;">
+    <!-- LOG 1: Estado del Servidor Local (Software) -->
+    <div class="status-badge" id="serverStatusBadge">
+      <div class="status-dot" id="serverStatusDot" style="background: var(--red);"></div>
+      <span class="status-text" id="serverStatusText">Servidor: Desconectado</span>
+    </div>
+
+    <!-- LOG 2: Estado del Escáner Físico (Hardware) -->
+    <div class="status-badge" id="hardwareStatusBadge" style="opacity: 0.6;">
+      <div class="status-dot" id="hardwareStatusDot" style="background: var(--orange);"></div>
+      <span class="status-text" id="hardwareStatusText">Escáner: Buscando...</span>
+    </div>
+  </div>
+
+  <div class="stepper" id="stepper">
+    <div class="step-dot active" data-step="1" id="dot-1" aria-label="Paso 1: Captura">1</div>
+    <div class="step-line" id="line-1"></div>
+    <div class="step-dot" data-step="2" id="dot-2" aria-label="Paso 2: Vista previa">2</div>
+    <div class="step-line" id="line-2"></div>
+    <div class="step-dot" data-step="3" id="dot-3" aria-label="Paso 3: Procesamiento IA"><span class="material-symbols-outlined">auto_awesome</span></div>
+    <div class="step-line" id="line-3"></div>
+    <div class="step-dot" data-step="4" id="dot-4" aria-label="Paso 4: Validación">4</div>
+    <div class="step-line" id="line-4"></div>
+    <div class="step-dot" data-step="5" id="dot-5" aria-label="Paso 5: Confirmación"><span class="material-symbols-outlined">check</span></div>
+  </div>
+
+  <div class="header-actions">
+    <span class="scanner-tag" id="scannerModelTag" style="display: none;">
+      <span class="material-symbols-outlined">print</span>
+      <span id="activeScannerName">Detectando...</span>
+    </span>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Cambiar tema"></button>
+    <button class="icon-btn" aria-label="Más opciones">
+      <span class="material-symbols-outlined">more_horiz</span>
+    </button>
+  </div>
+</header>

@@ -1,0 +1,21 @@
+/* === STAGGER SYSTEM === */
+[data-stagger] {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+  transition: opacity 0.4s ease, transform 0.5s var(--spring-bounce);
+}
+.revealed [data-stagger] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+.revealed [data-stagger]:nth-child(1) { transition-delay: 0.04s; }
+.revealed [data-stagger]:nth-child(2) { transition-delay: 0.08s; }
+.revealed [data-stagger]:nth-child(3) { transition-delay: 0.12s; }
+.revealed [data-stagger]:nth-child(4) { transition-delay: 0.16s; }
+.revealed [data-stagger]:nth-child(5) { transition-delay: 0.20s; }
+.revealed [data-stagger]:nth-child(6) { transition-delay: 0.24s; }
+.revealed [data-stagger]:nth-child(7) { transition-delay: 0.28s; }
+.revealed [data-stagger]:nth-child(8) { transition-delay: 0.32s; }
+.revealed [data-stagger]:nth-child(9) { transition-delay: 0.36s; }
+.revealed [data-stagger]:nth-child(10) { transition-delay: 0.40s; }
+

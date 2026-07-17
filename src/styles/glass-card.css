@@ -1,0 +1,54 @@
+/* === WIZARD VIEWPORT === */
+.wizard-viewport {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.step-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  opacity: 0;
+  transform: translate3d(0, 12px, 0) scale3d(0.98, 0.98, 1);
+  transition: opacity 0.45s var(--spring-ios), transform 0.5s var(--spring-bounce);
+  pointer-events: none;
+  overflow-y: auto;
+  will-change: transform, opacity;
+  contain: layout style;
+}
+.step-view.active {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+  pointer-events: auto;
+}
+.step-view::-webkit-scrollbar { width: 8px; }
+.step-view::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+/* === GLASS CARD === */
+.glass-card {
+  background: var(--bg-glass-heavy);
+  backdrop-filter: blur(60px) saturate(180%);
+  -webkit-backdrop-filter: blur(60px) saturate(180%);
+  border: 0.5px solid var(--glass-border);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--shadow-lg), var(--inset-light);
+  position: relative;
+  overflow: hidden;
+  transition: background 0.5s ease, border-color 0.5s ease;
+  transform: translate3d(0, 0, 0);
+}
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 60%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  pointer-events: none;
+}
+

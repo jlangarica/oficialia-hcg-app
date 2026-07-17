@@ -1,0 +1,23 @@
+/* === APP WINDOW === */
+.app-window {
+  position: relative;
+  z-index: 10;
+  width: 96vw;
+  height: 94vh;
+  max-width: 1600px;
+  border-radius: var(--r-2xl);
+  background: var(--bg-window);
+  backdrop-filter: blur(80px) saturate(200%);
+  -webkit-backdrop-filter: blur(80px) saturate(200%);
+  border: 0.5px solid var(--glass-border);
+  box-shadow: var(--window-shadow);
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  overflow: hidden;
+  transition: grid-template-columns 0.45s var(--spring-bounce), background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+  contain: layout style;
+}
+.app-window.sidebar-is-collapsed {
+  grid-template-columns: var(--sidebar-w-collapsed) 1fr;
+}
+

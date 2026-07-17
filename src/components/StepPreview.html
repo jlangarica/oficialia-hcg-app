@@ -1,0 +1,33 @@
+<!-- STEP 2: PREVIEW — Editor Interactivo en Caliente -->
+<section class="step-view" id="step-2">
+  <div class="preview-section" id="previewSection">
+    <!-- Toolbar -->
+    <div class="preview-toolbar" data-stagger>
+      <div class="preview-toolbar-left">
+        <h2>Interacción en Caliente</h2>
+        <p class="sub" id="previewSubtext">Reordena arrastrando, rota o elimina páginas antes de procesar con IA.</p>
+      </div>
+      <div class="preview-toolbar-right">
+        <button class="glass-btn" onclick="handleReScan()">
+          <span class="material-symbols-outlined">restart_alt</span>
+          Re-escanear
+        </button>
+        <button class="confirm-structure-btn" id="confirmStructureBtn" onclick="handleConfirmStructure()" disabled>
+          <span class="material-symbols-outlined">check_circle</span>
+          Confirmar Estructura
+        </button>
+      </div>
+    </div>
+
+    <!-- Contenedor dinámico de miniaturas -->
+    <div class="page-grid" id="pageGrid">
+      <!-- Se llena dinámicamente via JS -->
+    </div>
+
+    <!-- Estado vacío -->
+    <div class="empty-preview" id="emptyPreview" style="display:none;">
+      <span class="material-symbols-outlined">note_stack</span>
+      <span>No hay páginas para mostrar.</span>
+    </div>
+  </div>
+</section>
