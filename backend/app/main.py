@@ -140,7 +140,7 @@ async def serve_processed_pdf():
     pdf_path = settings.processed_pdf_path
     
     if not pdf_path.exists():
-        return FileResponse(
+        return JSONResponse(
             status_code=404,
             content={"error": "PDF procesado no encontrado"}
         )
