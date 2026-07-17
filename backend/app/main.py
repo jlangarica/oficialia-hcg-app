@@ -6,9 +6,9 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, JSONResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from app.config import Settings
 from app.handlers.websocket import ScanBridgeHandler
@@ -128,7 +128,7 @@ async def serve_raw_pdf(path: str | None = None):
         )
     except Exception as e:
         logger.error("Error al servir PDF: %s", e)
-        return FileResponse(
+        return JSONResponse(
             status_code=500,
             content={"error": f"Error interno: {str(e)}"}
         )
