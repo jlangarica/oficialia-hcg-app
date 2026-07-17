@@ -84,7 +84,7 @@ class ScanBridgeHandler:
         """Envía un mensaje de error al cliente."""
         await self._send_event("ERROR", message=message)
 
-    async def _send_hardware_status(self) -&gt; None:
+    async def _send_hardware_status(self) -> None:
         """Envía el diagnóstico inicial del escáner."""
         try:
             is_online = await self._scanner.check_connection()
