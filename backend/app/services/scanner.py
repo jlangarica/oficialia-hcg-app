@@ -19,8 +19,8 @@ class ScannerService:
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
-        # Lock centralizado para evitar colisiones en el bus físico USB/SANE
         self._lock = asyncio.Lock()
+        self._detected_device: str | None = None  # ◄ Almacena el dispositivo detectado al conectar
 
     @property
     def settings(self) -> Settings:
@@ -31,13 +31,31 @@ class ScannerService:
     ) -> ScanResult:
         """Ejecuta un escaneo físico forzando el modo oculto y headless en Linux."""
         async with self._lock:
-            cmd = [
-                self._settings.scanner_binary,
-                "-o", str(self._settings.raw_pdf_path),
-                "-p", self._settings.scanner_profile,
-                "--force",
-                "--hide-progress",
-            ]
+            # ════════════════════════════════════════════════════════════
+            # SELECCIÓN INTELIGENTE: Usar dispositivo directo si fue detectado
+            # ════════════════════════════════════════════════════════════
+            if self._detected_device:
+                logger.info("Usando dispositivo detectado directamente: %s", self._detected_device)
+                cmd = [
+                    self._settings.scanner_binary,
+                    "-d", self._detected_device,  # ◄ Escanea directo al hardware SANE
+                    "-o", str(self._settings.raw_pdf_path),
+                    "--force",
+                    "--hide-progress",
+                ]
+            else:
+                logger.warning(
+                    "No se detectó hardware previamente. Intentando con perfil: %s",
+                    self._settings.scanner_profile
+                )
+                cmd = [
+                    self._settings.scanner_binary,
+                    "-o", str(self._settings.raw_pdf_path),
+                    "-p", self._settings.scanner_profile,
+                    "--force",
+                    "--hide-progress",
+                ]
+
             if duplex:
                 cmd.append("--duplex")
             if resolution is not None:
@@ -45,9 +63,7 @@ class ScannerService:
 
             logger.debug("Comando a ejecutar: %s", shlex.join(cmd))
 
-            # ════════════════════════════════════════════════════════════
             # AISLAMIENTO GRÁFICO: Forzar entorno headless en Linux
-            # ════════════════════════════════════════════════════════════
             sub_env = os.environ.copy()
             if platform.system() == "Linux":
                 sub_env.pop("DISPLAY", None)
@@ -59,7 +75,7 @@ class ScannerService:
                     *cmd,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
-                    env=sub_env,  # Inyectar entorno sin pantalla
+                    env=sub_env,
                 )
                 stdout, stderr = await asyncio.wait_for(
                     process.communicate(),
@@ -83,18 +99,36 @@ class ScannerService:
             if process is None:
                 raise ScannerError("No se pudo iniciar el proceso de escaneo.")
 
+            # ════════════════════════════════════════════════════════════
+            # CAPTURA INTELIGENTE DE ERRORES (Une stdout y stderr para ver la realidad)
+            # ════════════════════════════════════════════════════════════
+            stdout_str = stdout.decode().strip() if stdout else ""
+            stderr_str = stderr.decode().strip() if stderr else ""
+
+            if process.returncode != 0:
+                logger.error("NAPS2 falló con código de retorno %d", process.returncode)
+                if stdout_str:
+                    logger.error("NAPS2 stdout: %s", stdout_str)
+                if stderr_str:
+                    logger.error("NAPS2 stderr: %s", stderr_str)
+
+                # Si stderr está vacío, extraemos el error de stdout para no devolver un string en blanco
+                combined_error = stderr_str or stdout_str or f"Error de subproceso (Código: {process.returncode})"
+                return ScanResult(
+                    returncode=process.returncode,
+                    stderr=combined_error,
+                )
+
             return ScanResult(
                 returncode=process.returncode,
-                stderr=stderr.decode().strip() if stderr else "",
+                stderr="",
             )
 
     async def detect_hardware_scanner(self) -> str | None:
-        """Lista los dispositivos evitando popups gráficos mediante herramientas nativas."""
+        """Lista los dispositivos evitando popups gráficos mediante SANE nativo en Linux."""
         async with self._lock:
             system = platform.system()
             
-            # En Linux, NAPS2 inicializa la interfaz gráfica antes de procesar los argumentos.
-            # Usamos 'scanimage -L' que consulta directamente a SANE de forma invisible en la terminal.
             if system == "Linux":
                 cmd = ["scanimage", "-L"]
             else:
@@ -112,7 +146,6 @@ class ScannerService:
                 if process.returncode == 0 and stdout:
                     decoded = stdout.decode().strip()
                     if system == "Linux":
-                        # Parsear formato de scanimage: device `backend:dev' is a...
                         lines = decoded.splitlines()
                         devices = [
                             line.split("`")[1].split("'")[0]
@@ -121,6 +154,8 @@ class ScannerService:
                         ]
                         if devices:
                             logger.info("Escáner físico SANE detectado: %s", devices[0])
+                            # ◄ GUARDAMOS EL HARDWARE: Se usará directamente al escanear
+                            self._detected_device = devices[0]
                             return devices[0]
                     else:
                         lines = decoded.splitlines()
@@ -130,6 +165,7 @@ class ScannerService:
                             if line.strip() and not line.startswith("---")
                         ]
                         if devices:
+                            self._detected_device = devices[0]
                             return devices[0]
                 return None
             except asyncio.TimeoutError:
