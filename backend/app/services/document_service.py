@@ -10,7 +10,7 @@ import shutil
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from sqlite3 import Connection, connect as sqlite_connect
+from sqlite3 import Connection, Row, connect as sqlite_connect
 
 from app.config import Settings
 from app.exceptions import PDFProcessingError
