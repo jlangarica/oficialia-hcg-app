@@ -18,6 +18,11 @@ function adjustZoom(delta) {
   const docEl = $('docPreview');
   if (zoomEl) zoomEl.textContent = currentZoom + '%';
   if (docEl) docEl.style.transform = 'scale(' + (currentZoom / 100) + ')';
+  
+  // También actualizar el visor de PDF real si está activo
+  if (typeof window.updatePDFZoom === 'function') {
+    window.updatePDFZoom(currentZoom);
+  }
 }
 
 export { adjustZoom, updateScanRing };

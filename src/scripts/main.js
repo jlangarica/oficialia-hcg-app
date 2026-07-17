@@ -33,6 +33,7 @@ import { toggleTheme, initTheme } from './theme.js';
 import { initRevealObserver } from './reveal.js';
 import { initWsBridge } from './ws-bridge.js';
 import { initAiProgress } from './ai-progress.js';
+import { initValidatePDFViewer } from './validate-pdf-viewer.js';
 
 // ─── Exponer funciones globales requeridas por onclick inline del HTML ───
 window.goToStep = goToStep;
@@ -60,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initPreviewActions();
   initPreviewConfirm();
   initAiProgress();
+  initValidatePDFViewer();
 
   // Conectar al agente local de escáner (último para que los demás módulos tengan sus listeners listos)
   initWsBridge();

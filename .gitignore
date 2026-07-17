@@ -1,81 +1,15 @@
-# OS files
-.DS_Store
-Thumbs.db
-Desktop.ini
-
-# Editors / IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Node / Vite
+```
+# Dependencies
 node_modules/
-dist/
-.vite/
-coverage/
-.parcel-cache/
-.npm/
-.npmrc
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
 
-# Python / FastAPI
-__pycache__/
-*.py[cod]
-*$py.class
-*.pyo
-*.pyd
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.tox/
-.nox/
-htmlcov/
-.coverage
-.coverage.*
-.pytype/
-
-# Virtual environments
-.venv/
-venv/
-env/
-ENV/
-venv.bak/
-*.egg-info/
-.eggs/
-
-# Environment files
-.env
-.env.*
-!.env.example
-
-# Local runtime / temp files
+# Logs and temp files
 *.log
-*.tmp
-*.temp
-*.bak
-*.orig
-tmp/
-temp/
-uploads/
-media/uploads/
 
-# Databases / local data
-*.sqlite3
-*.db
-*.db-journal
+# Environment
+.env
+.env.local
+.env.*
 
-# Build / generated artifacts
-build/
-out/
-site/
-.cache/
-
-# Misc
-*.pid
-*.seed
-*.pid.lock
+# Editors
+.vscode/
+```
