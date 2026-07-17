@@ -133,7 +133,6 @@
   z-index: 2;
   pointer-events: none;
   user-select: none;
-  will-change: transform;
   transform: translate3d(0, 0, 0);
 }
 .sidebar-logo::before {
@@ -145,7 +144,6 @@
   z-index: -1;
   animation: logo-aura 8s linear infinite;
   opacity: 0.7;
-  will-change: transform;
 }
 @keyframes logo-aura {
   0% { transform: rotate3d(0, 0, 1, 0deg); filter: blur(12px); }
@@ -188,7 +186,6 @@
   transform: rotate(45deg);
   animation: shimmer 6s linear infinite;
   pointer-events: none;
-  will-change: transform;
 }
 @keyframes shimmer {
   0% { transform: translate3d(-100%, 0, 0) rotate(45deg); }
