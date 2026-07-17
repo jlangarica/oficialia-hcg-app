@@ -14,7 +14,15 @@ from app.exceptions import (
 )
 from app.models import PageThumbnail
 # ◄ CORREGIDO: Importamos CommandAdapter para resolver la unión discriminada
-from app.schemas import ApplyEditsCommand, Command, CommandAdapter, StartScanCommand, LoadLocalPdfCommand
+from app.schemas import (
+    ApplyEditsCommand,
+    Command,
+    CommandAdapter,
+    ExtractMetadataCommand,
+    LoadLocalPdfCommand,
+    StartScanCommand,
+)
+from app.services.ai_extractor import AIExtractorService
 from app.services.pdf_processor import PDFProcessor
 from app.services.scanner import ScannerService
 
@@ -33,6 +41,7 @@ class ScanBridgeHandler:
         self._websocket = websocket
         self._scanner = scanner
         self._pdf_processor = pdf_processor
+        self._ai_extractor = AIExtractorService()
 
     async def handle(self) -> None:
         """Bucle principal de mensajes con protección total contra desconexiones en hot-paths."""
@@ -61,6 +70,8 @@ class ScanBridgeHandler:
                     await self._handle_apply_edits(command)
                 elif isinstance(command, LoadLocalPdfCommand):
                     await self._handle_load_local_pdf(command)
+                elif isinstance(command, ExtractMetadataCommand):
+                    await self._handle_extract_metadata(command)
                 else:
                     await self._send_error(
                         f"Comando no soportado: {type(command).__name__}"
@@ -178,6 +189,36 @@ class ScanBridgeHandler:
         except Exception as exc:
             logger.error("Error procesando PDF local: %s", exc)
             await self._send_error(f"Fallo al procesar el PDF cargado: {exc}")
+
+    async def _handle_extract_metadata(self, cmd: ExtractMetadataCommand) -> None:
+        """Gestiona la extracción por IA reportando hitos secuenciales al cliente web."""
+        logger.info("Comando recibido: EXTRACT_METADATA")
+
+        try:
+            await self._send_scan_status(10, "Detectando bordes y estructura lineal...")
+            await asyncio.sleep(0.5)
+
+            await self._send_scan_status(30, "Aplicando OCR sobre capas binarias...")
+            await asyncio.sleep(0.5)
+
+            await self._send_scan_status(55, "Identificando campos semánticos y firmas...")
+
+            pdf_target = self._pdf_processor.settings.raw_pdf_path
+
+            await self._send_scan_status(75, "Extrayendo datos estructurados con Gemini API...")
+            metadata = await self._ai_extractor.extract_metadata(pdf_target)
+
+            await self._send_scan_status(90, "Validando resultados y calculando scores...")
+            await asyncio.sleep(0.3)
+
+            payload = metadata.model_dump()
+
+            await self._send_event("METADATA_READY", metadata=payload)
+            await self._send_scan_status(100, "Procesamiento IA finalizado con éxito.")
+
+        except Exception as exc:
+            logger.exception("Fallo crítico durante el análisis por IA")
+            await self._send_error(f"Fallo en motor de extracción inteligente: {str(exc)}")
 
     @staticmethod
     def _thumbnail_to_dict(thumbnail: PageThumbnail) -> dict[str, Any]:
